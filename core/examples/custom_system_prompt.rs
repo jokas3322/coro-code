@@ -1,4 +1,4 @@
-//! Example demonstrating how to use custom system prompts with TraeAgent
+//! Example demonstrating how to use custom system prompts with LodeAgent
 //!
 //! This example shows three ways to set a custom system prompt:
 //! 1. Through configuration file
@@ -6,14 +6,14 @@
 //! 3. Dynamically at runtime
 
 use lode_core::{
-    agent::Agent,
+    agent::AgentCore,
     config::{agent_config::OutputMode, AgentConfig, Config},
     output::events::NullOutput,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("=== TraeAgent Custom System Prompt Example ===\n");
+    println!("=== LodeAgent Custom System Prompt Example ===\n");
 
     // Method 1: Set system prompt through AgentConfig
     println!("1. Setting system prompt through AgentConfig:");
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::default();
 
     // Create agent with custom system prompt
-    let mut agent = Agent::new_with_output(agent_config, config, Box::new(NullOutput)).await?;
+    let mut agent = AgentCore::new_with_output(agent_config, config, Box::new(NullOutput)).await?;
 
     // Verify the system prompt is set
     if let Some(prompt) = agent.get_configured_system_prompt() {
@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     agent.set_system_prompt(None);
 
     if agent.get_configured_system_prompt().is_none() {
-        println!("✓ System prompt cleared, will use default TRAE_AGENT_SYSTEM_PROMPT");
+        println!("✓ System prompt cleared, will use default LODE_AGENT_SYSTEM_PROMPT");
     }
 
     println!("\n=== Configuration Example ===");
