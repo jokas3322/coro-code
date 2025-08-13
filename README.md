@@ -66,10 +66,11 @@ export OPENAI_MODEL="gpt-4o"
 **Option B:** JSON files in your working directory
 
 ```json
-// openai.json
 {
-  "api_key": "your_openai_api_key",
-  "model": "gpt-4o"
+  "base_url": "https://api.deepseek.com",
+  "api_key": "your-api-key",
+  "model": "deepseek-chat",
+  "max_token": 8192
 }
 ```
 

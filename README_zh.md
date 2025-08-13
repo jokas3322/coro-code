@@ -66,10 +66,11 @@ export OPENAI_MODEL="gpt-4o"
 **方案 B：** 工作目录中的 JSON 文件
 
 ```json
-// openai.json
 {
-  "api_key": "your_openai_api_key",
-  "model": "gpt-4o"
+  "base_url": "https://api.deepseek.com",
+  "api_key": "your-api-key",
+  "model": "deepseek-chat",
+  "max_token": 8192
 }
 ```
 
