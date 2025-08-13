@@ -133,7 +133,7 @@ impl Config {
             system_prompt: None,
         };
 
-        agents.insert("trae_agent".to_string(), agent_config);
+        agents.insert("lode_agent".to_string(), agent_config);
 
         Ok(Self {
             agents,
@@ -187,7 +187,7 @@ impl Default for Config {
 
         // Default agent
         agents.insert(
-            "trae_agent".to_string(),
+            "lode_agent".to_string(),
             AgentConfig {
                 model: "default_model".to_string(),
                 max_steps: 200,

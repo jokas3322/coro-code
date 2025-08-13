@@ -1,6 +1,6 @@
-//! # Trae Agent CLI
+//! # Lode CLI
 //!
-//! Command-line interface for Trae Agent - an LLM-based agent for software engineering tasks.
+//! Command-line interface for Lode - a high-performance AI coding agent.
 //!
 //! This CLI provides both single-shot task execution and interactive modes,
 //! with a beautiful terminal UI powered by iocraft.
@@ -18,11 +18,11 @@ mod ui;
 
 use commands::{interactive_command, run_command, test_command, tools_command};
 
-/// Trae Agent - LLM-based agent for software engineering tasks
+/// Lode - A high-performance AI coding agent
 #[derive(Parser)]
-#[command(name = "trae")]
+#[command(name = "lode")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
-#[command(about = "An LLM-based agent for software engineering tasks")]
+#[command(about = "A high-performance AI coding agent written in Rust")]
 #[command(long_about = None)]
 struct Cli {
     /// Configuration directory path (for API provider configs)

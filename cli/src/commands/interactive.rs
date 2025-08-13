@@ -2,9 +2,9 @@
 
 use crate::interactive::app::run_rich_interactive;
 use anyhow::Result;
+use lode_core::Config;
 use std::path::PathBuf;
 use tracing::{debug, info};
-use trae_agent_rs_core::Config;
 
 /// Start interactive mode
 pub async fn interactive_command(

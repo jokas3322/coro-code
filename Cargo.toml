@@ -7,9 +7,9 @@ version = "0.0.1"
 edition = "2021"
 authors = ["Blushyes"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/blushyes/trae-agent-rs"
-homepage = "https://github.com/Blushyes/trae-agent-rs/tree/main/trae_agent_rs"
-description = "A Rust implementation of Trae Agent - LLM-based agent for software engineering tasks"
+repository = "https://github.com/Blushyes/Lode"
+homepage = "https://github.com/Blushyes/Lode"
+description = "Lode - A high-performance AI coding agent written in Rust"
 keywords = ["ai", "agent", "llm", "cli", "automation"]
 categories = ["command-line-utilities", "development-tools"]
 

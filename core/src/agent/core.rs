@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 /// TraeAgent - the main agent implementation
-pub struct TraeAgent {
+pub struct AgentCore {
     config: AgentConfig,
     llm_client: Arc<dyn LlmClient>,
     tool_executor: ToolExecutor,
@@ -30,7 +30,7 @@ pub struct TraeAgent {
     execution_context: Option<AgentExecutionContext>,
 }
 
-impl TraeAgent {
+impl AgentCore {
     /// Create a new TraeAgent with output handler
     pub async fn new_with_output(
         agent_config: AgentConfig,
@@ -563,7 +563,7 @@ impl TraeAgent {
 }
 
 #[async_trait]
-impl Agent for TraeAgent {
+impl Agent for AgentCore {
     async fn execute_task(&mut self, task: &str) -> AgentResult<AgentExecution> {
         // Use execute_task_with_context with current directory as default
         let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
@@ -575,7 +575,7 @@ impl Agent for TraeAgent {
     }
 
     fn agent_type(&self) -> &str {
-        "trae_agent"
+        "lode_agent"
     }
 
     fn set_trajectory_recorder(&mut self, recorder: TrajectoryRecorder) {
@@ -587,7 +587,7 @@ impl Agent for TraeAgent {
     }
 }
 
-impl TraeAgent {
+impl AgentCore {
     /// Execute a task with project context (like Python version)
     pub async fn execute_task_with_context(
         &mut self,
@@ -603,7 +603,7 @@ impl TraeAgent {
 
         // Create execution context
         self.execution_context = Some(AgentExecutionContext {
-            agent_id: "trae_agent".to_string(),
+            agent_id: "lode_agent".to_string(),
             task: task.to_string(),
             project_path: project_path.to_string_lossy().to_string(),
             max_steps: self.config.max_steps,
@@ -860,7 +860,7 @@ mod tests {
         let tool_registry = ToolRegistry::default();
         let tool_executor = tool_registry.create_executor(&agent_config.tools);
 
-        let agent = TraeAgent {
+        let agent = AgentCore {
             config: agent_config,
             llm_client: std::sync::Arc::new(MockLlmClient::new()),
             tool_executor,

@@ -21,7 +21,7 @@ pub async fn run_command(
     info!("Executing task: {}", task);
 
     use crate::output::cli_handler::{CliOutputConfig, CliOutputHandler};
-    use trae_agent_rs_core::{agent::TraeAgent, trajectory::TrajectoryRecorder, Config};
+    use lode_core::{agent::AgentCore, trajectory::TrajectoryRecorder, Config};
 
     // Output is now handled by the CLI output handler
 
@@ -60,7 +60,7 @@ pub async fn run_command(
     // Initialize agent with proper configuration
     let agent_config = _config
         .agents
-        .get("trae_agent")
+        .get("lode_agent")
         .cloned()
         .unwrap_or_default();
 
@@ -71,11 +71,11 @@ pub async fn run_command(
     let cli_output = Box::new(CliOutputHandler::new(cli_config));
 
     let mut agent =
-        TraeAgent::new_with_output(agent_config.clone(), _config.clone(), cli_output).await?;
+        AgentCore::new_with_output(agent_config.clone(), _config.clone(), cli_output).await?;
 
     // Initialize trajectory recorder
     let trajectory = TrajectoryRecorder::new();
-    let task_entry = trae_agent_rs_core::trajectory::TrajectoryEntry::task_start(
+    let task_entry = lode_core::trajectory::TrajectoryEntry::task_start(
         task.clone(),
         serde_json::to_value(&agent_config).unwrap_or_default(),
     );

@@ -12,11 +12,11 @@ use crate::interactive::file_search::{
 use crate::interactive::input_history::InputHistory;
 use crate::interactive::message_handler::AppMessage;
 use iocraft::prelude::*;
+use lode_core::Config;
 use std::cmp::min;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use tokio::sync::broadcast;
-use trae_agent_rs_core::Config;
 use unicode_width::UnicodeWidthStr;
 
 /// Calculate cursor position (line, column) from text and byte position
@@ -928,7 +928,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
             if !*history_initialized.read() {
                 // Clone the history to avoid borrowing issues
                 let mut history_clone = input_history.read().clone();
-                let null_output = trae_agent_rs_core::output::NullOutput;
+                let null_output = lode_core::output::NullOutput;
                 if let Ok(()) = history_clone.load(&null_output).await {
                     // Ensure navigation is properly reset after loading
                     history_clone.reset_navigation();
@@ -950,7 +950,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
                 // Check if history needs saving
                 let mut history_clone = input_history.read().clone();
                 if history_clone.needs_save() {
-                    let null_output = trae_agent_rs_core::output::NullOutput;
+                    let null_output = lode_core::output::NullOutput;
                     if let Ok(()) = history_clone.save_if_needed(&null_output).await {
                         input_history.set(history_clone);
                     }

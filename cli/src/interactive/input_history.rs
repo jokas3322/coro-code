@@ -3,10 +3,10 @@
 //! This module provides functionality to store, persist, and navigate through
 //! user input history with keyboard navigation support.
 
+use lode_core::output::AgentOutput;
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use tokio::fs;
-use trae_agent_rs_core::output::AgentOutput;
 
 /// Maximum number of history entries to keep in memory and on disk
 const MAX_HISTORY_SIZE: usize = 1000;
@@ -69,7 +69,7 @@ impl InputHistory {
     /// Get the default history file path
     pub fn default_history_path() -> PathBuf {
         let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        path.push("trae-agent");
+        path.push("lode");
         path.push(HISTORY_FILE_NAME);
         path
     }

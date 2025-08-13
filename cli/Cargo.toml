@@ -1,17 +1,17 @@
 [package]
-name = "trae-agent-cli"
+name = "lode-cli"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "CLI application for Trae Agent - LLM-based agent for software engineering tasks"
+description = "CLI application for Lode - A high-performance AI coding agent"
 keywords.workspace = true
 categories.workspace = true
 
 [[bin]]
-name = "trae-rs"
+name = "lode"
 path = "src/main.rs"
 
 [dependencies]
@@ -35,7 +35,7 @@ dirs = { workspace = true }
 shellexpand = { workspace = true }
 
 # Local dependencies
-trae-agent-rs-core = { path = "../core" }
+lode-core = { path = "../core" }
 
 # CLI-specific dependencies
 async-trait = "0.1"

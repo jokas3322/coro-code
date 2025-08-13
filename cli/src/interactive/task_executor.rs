@@ -6,9 +6,9 @@
 use crate::interactive::message_handler::AppMessage;
 use crate::output::interactive_handler::{InteractiveMessage, InteractiveOutputConfig};
 use anyhow::Result;
+use lode_core::Config;
 use std::path::PathBuf;
 use tokio::sync::{broadcast, mpsc};
-use trae_agent_rs_core::Config;
 
 /// Custom output handler that forwards events and tracks tokens
 pub struct TokenTrackingOutputHandler {
@@ -33,27 +33,27 @@ impl TokenTrackingOutputHandler {
 }
 
 #[async_trait::async_trait]
-impl trae_agent_rs_core::output::AgentOutput for TokenTrackingOutputHandler {
+impl lode_core::output::AgentOutput for TokenTrackingOutputHandler {
     async fn emit_event(
         &self,
-        event: trae_agent_rs_core::output::AgentEvent,
+        event: lode_core::output::AgentEvent,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Check for token updates and status updates in various events
         match &event {
-            trae_agent_rs_core::output::AgentEvent::ExecutionCompleted { context, .. } => {
+            lode_core::output::AgentEvent::ExecutionCompleted { context, .. } => {
                 if context.token_usage.total_tokens > 0 {
                     let _ = self.ui_sender.send(AppMessage::TokenUpdate {
                         tokens: context.token_usage.total_tokens,
                     });
                 }
             }
-            trae_agent_rs_core::output::AgentEvent::TokenUsageUpdated { token_usage } => {
+            lode_core::output::AgentEvent::TokenUsageUpdated { token_usage } => {
                 // Send immediate token update for smooth animation
                 let _ = self.ui_sender.send(AppMessage::TokenUpdate {
                     tokens: token_usage.total_tokens,
                 });
             }
-            trae_agent_rs_core::output::AgentEvent::StatusUpdate { status, .. } => {
+            lode_core::output::AgentEvent::StatusUpdate { status, .. } => {
                 // Send status update to UI
                 let _ = self.ui_sender.send(AppMessage::AgentTaskStarted {
                     operation: status.clone(),
@@ -85,10 +85,10 @@ pub async fn execute_agent_task(
     // Create a receiver to listen for interruption signals
     let mut interrupt_receiver = ui_sender.subscribe();
     use crate::tools::StatusReportToolFactory;
-    use trae_agent_rs_core::tools::ToolRegistry;
+    use lode_core::tools::ToolRegistry;
 
     // Get agent configuration
-    let mut agent_config = config.agents.get("trae_agent").cloned().unwrap_or_default();
+    let mut agent_config = config.agents.get("lode_agent").cloned().unwrap_or_default();
 
     // Add status_report tool to the tool list for interactive mode
     if !agent_config.tools.contains(&"status_report".to_string()) {
@@ -127,7 +127,7 @@ pub async fn execute_agent_task(
     let modified_config = config.clone();
 
     // Create and execute agent task
-    let mut agent = trae_agent_rs_core::agent::TraeAgent::new_with_output_and_registry(
+    let mut agent = lode_core::agent::AgentCore::new_with_output_and_registry(
         agent_config,
         modified_config,
         token_tracking_output,
@@ -168,8 +168,8 @@ pub async fn execute_agent_task(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lode_core::output::AgentOutput;
     use tokio::sync::broadcast;
-    use trae_agent_rs_core::output::AgentOutput;
 
     #[test]
     fn test_token_tracking_output_handler_creation() {

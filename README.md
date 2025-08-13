@@ -24,20 +24,20 @@ Lode is a high-performance AI coding agent written in Rust with a rich terminal 
 ### Install
 
 ```bash
-cargo install --git https://github.com/Blushyes/trae-agent-rs --bin trae-rs
+cargo install --git https://github.com/Blushyes/Lode --bin lode
 ```
 
 ### Run
 
 ```bash
 # Interactive mode (recommended)
-trae-rs interactive
+lode interactive
 
 # Or simply
-trae-rs
+lode
 
 # Single task
-trae-rs run "Fix the bug in main.rs"
+lode run "Fix the bug in main.rs"
 ```
 
 ## Minimal Config
@@ -84,6 +84,7 @@ Supported (current/coming):
 - Safety and rate limiting: sandbox mode (restricted bash/network toggle), concurrency and rate caps
 - Pluggable tool system: spec for third-party tools, versioning and dependency declaration
 - Testing and benchmarking: e2e samples, performance baselines and comparison reports
+- Need a cli LOGO like gemini-cli's
 
 ## License
 

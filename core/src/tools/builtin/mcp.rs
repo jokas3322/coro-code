@@ -91,7 +91,7 @@ impl McpServer {
                     "tools": {}
                 },
                 "clientInfo": {
-                    "name": "trae-agent-rs",
+                    "name": "lode",
                     "version": "0.1.0"
                 }
             }

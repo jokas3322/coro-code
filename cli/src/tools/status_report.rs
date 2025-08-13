@@ -3,9 +3,9 @@
 
 use crate::interactive::message_handler::AppMessage;
 use async_trait::async_trait;
+use lode_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use serde_json::json;
 use tokio::sync::broadcast;
-use trae_agent_rs_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
 
 /// Status reporting tool for interactive mode
 /// This tool is designed to be used exclusively in interactive mode to provide
@@ -61,7 +61,7 @@ impl Tool for StatusReportTool {
         })
     }
 
-    async fn execute(&self, call: ToolCall) -> trae_agent_rs_core::error::Result<ToolResult> {
+    async fn execute(&self, call: ToolCall) -> lode_core::error::Result<ToolResult> {
         let status: String = call.get_parameter("status")?;
         let details: Option<String> = call.get_parameter("details").ok();
 
@@ -158,7 +158,7 @@ impl StatusReportToolFactory {
     }
 }
 
-impl trae_agent_rs_core::tools::ToolFactory for StatusReportToolFactory {
+impl lode_core::tools::ToolFactory for StatusReportToolFactory {
     fn create(&self) -> Box<dyn Tool> {
         if let Some(ui_sender) = &self.ui_sender {
             Box::new(StatusReportTool::with_ui_sender(ui_sender.clone()))

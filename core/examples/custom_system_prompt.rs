@@ -5,8 +5,8 @@
 //! 2. Through AgentConfig directly
 //! 3. Dynamically at runtime
 
-use trae_agent_rs_core::{
-    agent::TraeAgent,
+use lode_core::{
+    agent::Agent,
     config::{agent_config::OutputMode, AgentConfig, Config},
     output::events::NullOutput,
 };
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::default();
 
     // Create agent with custom system prompt
-    let mut agent = TraeAgent::new_with_output(agent_config, config, Box::new(NullOutput)).await?;
+    let mut agent = Agent::new_with_output(agent_config, config, Box::new(NullOutput)).await?;
 
     // Verify the system prompt is set
     if let Some(prompt) = agent.get_configured_system_prompt() {

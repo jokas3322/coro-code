@@ -36,7 +36,7 @@ pub async fn test_command() -> Result<()> {
 }
 
 async fn test_config() -> Result<()> {
-    use trae_agent_rs_core::Config;
+    use lode_core::Config;
 
     // Test default configuration
     let config = Config::default();
@@ -60,7 +60,7 @@ async fn test_config() -> Result<()> {
 }
 
 async fn test_tools() -> Result<()> {
-    use trae_agent_rs_core::tools::ToolRegistry;
+    use lode_core::tools::ToolRegistry;
 
     let registry = ToolRegistry::default();
     let tools = registry.list_tools();
@@ -76,7 +76,7 @@ async fn test_tools() -> Result<()> {
 
 async fn test_llm() -> Result<()> {
     // Just test that we can create the types
-    use trae_agent_rs_core::llm::{LlmMessage, MessageRole};
+    use lode_core::llm::{LlmMessage, MessageRole};
 
     let message = LlmMessage::system("Test system message");
 

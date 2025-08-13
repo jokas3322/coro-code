@@ -10,10 +10,10 @@ use crate::interactive::router::{Route, UIRouter, UIRouterBuilder};
 use crate::interactive::terminal_output::{output_content_block, overwrite_previous_lines};
 use anyhow::Result;
 use iocraft::prelude::*;
+use lode_core::Config;
 use regex::Regex;
 use std::path::PathBuf;
 use tokio::sync::broadcast;
-use trae_agent_rs_core::Config;
 
 /// Represents a file reference found in user input
 #[derive(Debug, Clone)]

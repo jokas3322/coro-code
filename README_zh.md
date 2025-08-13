@@ -24,20 +24,20 @@ Lode 是一个用 Rust 编写的高性能 AI 编码代理，带有丰富的终�
 ### 安装
 
 ```bash
-cargo install --git https://github.com/Blushyes/trae-agent-rs --bin trae-rs
+cargo install --git https://github.com/Blushyes/Lode --bin lode
 ```
 
 ### 运行
 
 ```bash
 # 交互模式（推荐）
-trae-rs interactive
+lode interactive
 
 # 或直接
-trae-rs
+lode
 
 # 单次任务
-trae-rs run "Fix the bug in main.rs"
+lode run "Fix the bug in main.rs"
 ```
 
 ## 最简配置
@@ -84,6 +84,7 @@ export OPENAI_MODEL="gpt-4o"
 - 安全与速率限制：沙箱模式（受限 bash/网络开关）、并发与速率限制
 - 插件化工具系统：第三方工具注册规范、版本与依赖声明
 - 测试与基准：端到端测试样例、性能基准与对比报告
+- 需要一个和 gemini-cli 风格类似的 logo
 
 ## 许可证
 

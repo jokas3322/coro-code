@@ -7,7 +7,7 @@ use tracing::info;
 pub async fn tools_command() -> Result<()> {
     info!("Listing available tools");
 
-    use trae_agent_rs_core::tools::ToolRegistry;
+    use lode_core::tools::ToolRegistry;
 
     println!("🛠️  Available Tools\n");
 
@@ -24,7 +24,9 @@ pub async fn tools_command() -> Result<()> {
     }
 
     println!("💡 Use these tools in your tasks to accomplish complex workflows!");
-    println!("📋 All tools follow the exact same specifications as the Python version of Trae Agent.");
+    println!(
+        "📋 All tools follow the exact same specifications as the Python version of Trae Agent."
+    );
 
     Ok(())
 }

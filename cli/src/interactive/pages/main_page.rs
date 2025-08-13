@@ -23,7 +23,7 @@ impl Default for MainPageProps {
                 ui_anim: crate::interactive::animation::UiAnimationConfig::default(),
             },
             input_context: InputSectionContext {
-                config: trae_agent_rs_core::Config::default(),
+                config: lode_core::Config::default(),
                 project_path: std::path::PathBuf::from("."),
                 ui_sender: tokio::sync::broadcast::channel(1).0,
             },
@@ -35,7 +35,7 @@ impl Default for MainPageProps {
 #[component]
 pub fn MainPage(hooks: Hooks, props: &MainPageProps) -> impl Into<AnyElement<'static>> {
     let _ = hooks; // Suppress unused variable warning for now
-    
+
     element! {
         View(
             key: "main-page-container",
