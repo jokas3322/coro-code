@@ -244,7 +244,7 @@ pub fn EnhancedTextInput(
                                 // If this Enter comes immediately after burst typing/paste, treat as newline (not file pick)
                                 let recent_text = Instant::now()
                                     .duration_since(*last_text_time.read())
-                                    <= Duration::from_millis(800);
+                                    <= Duration::from_millis(10);
                                 if recent_text && matches!(code, KeyCode::Enter) {
                                     // Close popup and let the general handler below process Enter as newline
                                     show_file_list.set(false);

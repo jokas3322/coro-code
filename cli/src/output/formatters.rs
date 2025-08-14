@@ -23,6 +23,11 @@ impl ToolFormatter {
 
     /// Format tool execution status for CLI display
     pub fn format_tool_status(&self, tool_info: &ToolExecutionInfo) -> String {
+        // Don't show status for task_done tool
+        if tool_info.tool_name == "task_done" {
+            return String::new();
+        }
+
         let (dot_color, dot_char) = match tool_info.status {
             ToolExecutionStatus::Executing => (WHITE, "⏺"),
             ToolExecutionStatus::Success => (GREEN, "⏺"),
@@ -166,7 +171,21 @@ impl ToolFormatter {
                     }
                 }
             }
-            "task_done" => Some(format!("  ⎿  {}", result.content)),
+            "task_done" => {
+                // Extract details from the task_done result content
+                // Format: "Summary: {summary}\n\nDetails:\n{details}"
+                let content = &result.content;
+                if let Some(details_start) = content.find("Details:\n") {
+                    let details = &content[details_start + 9..]; // Skip "Details:\n"
+                    if !details.trim().is_empty() {
+                        Some(details.trim().to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
             "sequentialthinking" => {
                 // Thinking tool - no result message needed, thinking is shown separately
                 None

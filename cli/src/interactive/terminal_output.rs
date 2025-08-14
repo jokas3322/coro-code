@@ -35,6 +35,14 @@ pub fn output_content_block<T: OutputHandle>(
 ) -> usize {
     let wrapped_lines = wrap_text(content, terminal_width);
 
+    // Add empty line before each block for proper spacing, except for certain types
+    let should_add_empty_line = !content.contains("⎿")
+        && block_type != ContentBlock::UserInput
+        && block_type != ContentBlock::ToolResult;
+    if should_add_empty_line {
+        stdout.println("");
+    }
+
     // Output the content lines
     match block_type {
         ContentBlock::UserInput => {
@@ -50,7 +58,7 @@ pub fn output_content_block<T: OutputHandle>(
             for line in wrapped_lines.iter() {
                 if is_bash_output {
                     // Apply gray color using ANSI escape codes
-                    let gray_line = format!("\x1b[90m{}\x1b[0m", line);
+                    let gray_line: String = format!("\x1b[90m{}\x1b[0m", line);
                     stdout.println(gray_line);
                 } else {
                     stdout.println(line);
@@ -59,16 +67,10 @@ pub fn output_content_block<T: OutputHandle>(
         }
     }
 
-    // Add empty line after each block for proper spacing, except for ToolStatus and ToolResult
-    if !matches!(
-        block_type,
-        ContentBlock::ToolStatus | ContentBlock::ToolResult
-    ) {
-        stdout.println("");
-        // Return total lines including the empty line
+    // Return total lines including the empty line before (if added)
+    if should_add_empty_line {
         wrapped_lines.len() + 1
     } else {
-        // For ToolStatus and ToolResult, do not add a trailing empty line for compact display
         wrapped_lines.len()
     }
 }
@@ -82,7 +84,7 @@ pub fn output_content_block<T: OutputHandle>(
 /// - `previous_line_count`: Number of lines the previous message occupied
 ///
 /// # Returns
-/// The number of lines the new content occupies (including empty line)
+/// The number of lines the new content occupies (including empty line if added)
 pub fn overwrite_previous_lines<T: OutputHandle>(
     stdout: &T,
     content: &str,
@@ -96,49 +98,43 @@ pub fn overwrite_previous_lines<T: OutputHandle>(
     let is_bash_output = is_bash_output_content(content);
     let wrapped_lines = wrap_text(content, terminal_width);
 
+    // Check if we should add empty line before content
+    let should_add_empty_line = !content.contains("⎿")
+        && block_type != ContentBlock::UserInput
+        && block_type != ContentBlock::ToolResult;
+
     // Move cursor up to overwrite the previous message and clear from cursor to end of screen
-    for (i, line) in wrapped_lines.iter().enumerate() {
-        if i == 0 {
-            // For the first line, move up and clear from cursor to end of screen, then write new content
-            let formatted_line = match block_type {
-                ContentBlock::UserInput => format!("> {}", line),
-                _ => {
-                    if is_bash_output {
-                        format!("\x1b[90m{}\x1b[0m", line)
-                    } else {
-                        line.to_string()
-                    }
-                }
-            };
-            stdout.println(format!(
-                "\x1b[{}A\x1b[0J{}",
-                previous_line_count, formatted_line
-            ));
-        } else {
-            let formatted_line = match block_type {
-                ContentBlock::UserInput => format!("  {}", line),
-                _ => {
-                    if is_bash_output {
-                        format!("\x1b[90m{}\x1b[0m", line)
-                    } else {
-                        line.to_string()
-                    }
-                }
-            };
-            stdout.println(formatted_line);
-        }
+    stdout.println(format!("\x1b[{}A\x1b[0J", previous_line_count));
+
+    // Add empty line before content if needed
+    if should_add_empty_line {
+        stdout.println("");
     }
 
-    // Add empty line after each block for proper spacing, except for ToolStatus and ToolResult
-    if !matches!(
-        block_type,
-        ContentBlock::ToolStatus | ContentBlock::ToolResult
-    ) {
-        stdout.println("");
-        // Return total lines including the empty line
+    for (i, line) in wrapped_lines.iter().enumerate() {
+        let formatted_line = match block_type {
+            ContentBlock::UserInput => {
+                if i == 0 {
+                    format!("> {}", line)
+                } else {
+                    format!("  {}", line)
+                }
+            }
+            _ => {
+                if is_bash_output {
+                    format!("\x1b[90m{}\x1b[0m", line)
+                } else {
+                    line.to_string()
+                }
+            }
+        };
+        stdout.println(formatted_line);
+    }
+
+    // Return total lines including the empty line before (if added)
+    if should_add_empty_line {
         wrapped_lines.len() + 1
     } else {
-        // For ToolStatus and ToolResult, do not add a trailing empty line for compact display
         wrapped_lines.len()
     }
 }

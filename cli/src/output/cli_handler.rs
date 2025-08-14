@@ -168,7 +168,10 @@ impl AgentOutput for CliOutputHandler {
                 // Skip status display for silent tools
                 if !is_silent_tool(&tool_info.tool_name) {
                     // Show executing status (white dot)
-                    println!("{}", self.tool_formatter.format_tool_status(&tool_info));
+                    let status = self.tool_formatter.format_tool_status(&tool_info);
+                    if !status.is_empty() {
+                        println!("{}", status);
+                    }
                 }
                 // Always track tools for potential updates
                 let mut active_tools = self.active_tools.lock().await;
@@ -202,7 +205,10 @@ impl AgentOutput for CliOutputHandler {
                 }
 
                 // Always show the final status (green/red dot)
-                println!("{}", self.tool_formatter.format_tool_status(&tool_info));
+                let final_status = self.tool_formatter.format_tool_status(&tool_info);
+                if !final_status.is_empty() {
+                    println!("{}", final_status);
+                }
 
                 // Show result content if available
                 if let Some(result_display) = self.tool_formatter.format_tool_result(&tool_info) {

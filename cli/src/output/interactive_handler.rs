@@ -130,10 +130,12 @@ impl AgentOutput for InteractiveOutputHandler {
                     if !is_silent_tool(&tool_info.tool_name) {
                         // Use same format as CLI mode
                         let status_msg = self.tool_formatter.format_tool_status(&tool_info);
-                        let _ = ui_sender.send(InteractiveMessage::ToolStatus {
-                            execution_id: tool_info.execution_id.clone(),
-                            status: status_msg,
-                        });
+                        if !status_msg.is_empty() {
+                            let _ = ui_sender.send(InteractiveMessage::ToolStatus {
+                                execution_id: tool_info.execution_id.clone(),
+                                status: status_msg,
+                            });
+                        }
                     }
                     // Track tool for potential updates
                     let mut active_tools = self.active_tools.lock().await;
@@ -152,10 +154,12 @@ impl AgentOutput for InteractiveOutputHandler {
 
                     // Use same format as CLI mode
                     let status_msg = self.tool_formatter.format_tool_status(&tool_info);
-                    let _ = ui_sender.send(InteractiveMessage::ToolStatus {
-                        execution_id: tool_info.execution_id.clone(),
-                        status: status_msg,
-                    });
+                    if !status_msg.is_empty() {
+                        let _ = ui_sender.send(InteractiveMessage::ToolStatus {
+                            execution_id: tool_info.execution_id.clone(),
+                            status: status_msg,
+                        });
+                    }
 
                     // Show result content if available
                     if let Some(result_display) = self.tool_formatter.format_tool_result(&tool_info)
