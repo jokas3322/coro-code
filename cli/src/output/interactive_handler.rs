@@ -5,13 +5,14 @@ use super::cli_handler::{CliOutputConfig, CliOutputHandler};
 use super::formatters::{DiffFormatter, ToolFormatter};
 use async_trait::async_trait;
 use coro_core::output::{AgentEvent, AgentOutput, MessageLevel, ToolExecutionStatus};
+use coro_core::tools::output_formatter::{GRAY, RESET};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 
 /// Tools that should not display status indicators
-static SILENT_TOOLS: &[&str] = &["status_report"];
+static SILENT_TOOLS: &[&str] = &["sequentialthinking", "status_report"];
 
 /// Check if a tool should be silent (no status display)
 fn is_silent_tool(tool_name: &str) -> bool {
@@ -143,6 +144,10 @@ impl AgentOutput for InteractiveOutputHandler {
                 }
 
                 AgentEvent::ToolExecutionCompleted { tool_info } => {
+                    // !!! IMPORTANT
+                    // These tools, such as “thinking,” are already handled in `Agent::Thinking`.
+                    // Here, it’s actually a status display that starts with a dot.
+
                     // Skip all output for silent tools
                     if is_silent_tool(&tool_info.tool_name) {
                         return Ok(());
@@ -179,7 +184,10 @@ impl AgentOutput for InteractiveOutputHandler {
 
                 AgentEvent::AgentThinking { thinking, .. } => {
                     // Use same format as CLI mode - gray color without prefix
-                    let _ = ui_sender.send(InteractiveMessage::AgentThinking(thinking));
+                    let _ = ui_sender.send(InteractiveMessage::AgentThinking(format!(
+                        "{}{}{}",
+                        GRAY, thinking, RESET
+                    )));
                 }
 
                 AgentEvent::Message { level, content, .. } => {

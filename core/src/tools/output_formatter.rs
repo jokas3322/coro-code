@@ -7,13 +7,13 @@ use crate::tools::{ToolCall, ToolResult};
 use std::path::Path;
 
 // ANSI color codes
-const RED_BG: &str = "\x1b[41m";    // Red background
-const GREEN_BG: &str = "\x1b[42m";  // Green background
-const GRAY: &str = "\x1b[90m";      // Gray text for line numbers
-const WHITE: &str = "\x1b[97m";     // White text for executing status
-const GREEN: &str = "\x1b[92m";     // Green text for success status
-const RED: &str = "\x1b[91m";       // Red text for error status
-const RESET: &str = "\x1b[0m";
+pub const RED_BG: &str = "\x1b[41m"; // Red background
+pub const GREEN_BG: &str = "\x1b[42m"; // Green background
+pub const GRAY: &str = "\x1b[90m"; // Gray text for line numbers
+pub const WHITE: &str = "\x1b[97m"; // White text for executing status
+pub const GREEN: &str = "\x1b[92m"; // Green text for success status
+pub const RED: &str = "\x1b[91m"; // Red text for error status
+pub const RESET: &str = "\x1b[0m";
 
 /// Status of tool execution
 #[derive(Debug, Clone, Copy)]
@@ -40,12 +40,25 @@ impl ToolOutputFormatter {
             ToolStatus::Error => (RED, "⏺"),
         };
 
-        format!("{}{}{} {}({})", dot_color, dot_char, RESET, tool_name, command)
+        format!(
+            "{}{}{} {}({})",
+            dot_color, dot_char, RESET, tool_name, command
+        )
     }
 
     /// Format tool result with unified output format
-    pub fn format_tool_result_unified(&self, tool_name: &str, command: &str, content: &str, success: bool) -> String {
-        let status = if success { ToolStatus::Success } else { ToolStatus::Error };
+    pub fn format_tool_result_unified(
+        &self,
+        tool_name: &str,
+        command: &str,
+        content: &str,
+        success: bool,
+    ) -> String {
+        let status = if success {
+            ToolStatus::Success
+        } else {
+            ToolStatus::Error
+        };
         let status_line = self.format_tool_status(tool_name, command, status);
 
         if content.trim().is_empty() {
@@ -63,8 +76,18 @@ impl ToolOutputFormatter {
     }
 
     /// Format tool result with status update (overwrites previous line)
-    pub fn format_tool_result_with_update(&self, tool_name: &str, command: &str, content: &str, success: bool) -> String {
-        let status = if success { ToolStatus::Success } else { ToolStatus::Error };
+    pub fn format_tool_result_with_update(
+        &self,
+        tool_name: &str,
+        command: &str,
+        content: &str,
+        success: bool,
+    ) -> String {
+        let status = if success {
+            ToolStatus::Success
+        } else {
+            ToolStatus::Error
+        };
         let mut result = String::new();
 
         // Clear current line and move cursor up to overwrite the executing line
@@ -87,7 +110,8 @@ impl ToolOutputFormatter {
     /// Format tool result based on the operation type
     pub fn format_tool_result(&self, tool_call: &ToolCall, tool_result: &ToolResult) -> String {
         // Extract command from tool call parameters
-        let command = tool_call.parameters
+        let command = tool_call
+            .parameters
             .get("command")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
@@ -114,7 +138,8 @@ impl ToolOutputFormatter {
             return format!("Error: {}", tool_result.content);
         }
 
-        let path = tool_call.parameters
+        let path = tool_call
+            .parameters
             .get("path")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
@@ -127,7 +152,10 @@ impl ToolOutputFormatter {
         // Count lines in the content
         let line_count = tool_result.content.lines().count();
 
-        format!("⏺ Read({})\n  ⎿  Read {} lines (ctrl+r to expand)", file_name, line_count)
+        format!(
+            "⏺ Read({})\n  ⎿  Read {} lines (ctrl+r to expand)",
+            file_name, line_count
+        )
     }
 
     /// Format str_replace operation result with diff view
@@ -136,17 +164,20 @@ impl ToolOutputFormatter {
             return format!("Error: {}", tool_result.content);
         }
 
-        let path = tool_call.parameters
+        let path = tool_call
+            .parameters
             .get("path")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
 
-        let old_str = tool_call.parameters
+        let old_str = tool_call
+            .parameters
             .get("old_str")
             .and_then(|v| v.as_str())
             .unwrap_or("");
 
-        let new_str = tool_call.parameters
+        let new_str = tool_call
+            .parameters
             .get("new_str")
             .and_then(|v| v.as_str())
             .unwrap_or("");
@@ -168,12 +199,14 @@ impl ToolOutputFormatter {
             return format!("Error: {}", tool_result.content);
         }
 
-        let path = tool_call.parameters
+        let path = tool_call
+            .parameters
             .get("path")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
 
-        let new_str = tool_call.parameters
+        let new_str = tool_call
+            .parameters
             .get("new_str")
             .and_then(|v| v.as_str())
             .unwrap_or("");
@@ -195,12 +228,14 @@ impl ToolOutputFormatter {
             return format!("Error: {}", tool_result.content);
         }
 
-        let path = tool_call.parameters
+        let path = tool_call
+            .parameters
             .get("path")
             .and_then(|v| v.as_str())
             .unwrap_or("unknown");
 
-        let file_text = tool_call.parameters
+        let file_text = tool_call
+            .parameters
             .get("file_text")
             .and_then(|v| v.as_str())
             .unwrap_or("");
@@ -219,7 +254,12 @@ impl ToolOutputFormatter {
     /// Create a unified diff view for all operations
     /// old_content: None for create/insert operations, Some for replace operations
     /// new_content: None for delete operations, Some for replace/create/insert operations
-    fn create_unified_diff_view(&self, file_name: &str, old_content: Option<&str>, new_content: Option<&str>) -> String {
+    fn create_unified_diff_view(
+        &self,
+        file_name: &str,
+        old_content: Option<&str>,
+        new_content: Option<&str>,
+    ) -> String {
         let mut result = String::new();
 
         result.push_str(&format!("╭{:─<120}╮\n", ""));
@@ -237,14 +277,25 @@ impl ToolOutputFormatter {
             if i < old_lines.len() && i < new_lines.len() {
                 if old_lines[i] != new_lines[i] {
                     // Changed line - show both old and new
-                    let old_line = self.format_line_with_background_and_prefix(old_lines[i], RED_BG, "-");
-                    let new_line = self.format_line_with_background_and_prefix(new_lines[i], GREEN_BG, "+");
-                    result.push_str(&format!("│   {}{}{} {} │\n", GRAY, line_num, RESET, old_line));
-                    result.push_str(&format!("│   {}{}{} {} │\n", GRAY, line_num, RESET, new_line));
+                    let old_line =
+                        self.format_line_with_background_and_prefix(old_lines[i], RED_BG, "-");
+                    let new_line =
+                        self.format_line_with_background_and_prefix(new_lines[i], GREEN_BG, "+");
+                    result.push_str(&format!(
+                        "│   {}{}{} {} │\n",
+                        GRAY, line_num, RESET, old_line
+                    ));
+                    result.push_str(&format!(
+                        "│   {}{}{} {} │\n",
+                        GRAY, line_num, RESET, new_line
+                    ));
                 } else {
                     // Unchanged line
                     let line = self.truncate_line(old_lines[i]);
-                    result.push_str(&format!("│   {}{}{}    {:<100} │\n", GRAY, line_num, RESET, line));
+                    result.push_str(&format!(
+                        "│   {}{}{}    {:<100} │\n",
+                        GRAY, line_num, RESET, line
+                    ));
                 }
             } else if i < old_lines.len() {
                 // Deleted line
@@ -263,7 +314,12 @@ impl ToolOutputFormatter {
     }
 
     /// Format a line with background color including prefix symbol
-    fn format_line_with_background_and_prefix(&self, line: &str, bg_color: &str, prefix: &str) -> String {
+    fn format_line_with_background_and_prefix(
+        &self,
+        line: &str,
+        bg_color: &str,
+        prefix: &str,
+    ) -> String {
         let truncated = self.truncate_line(line);
         let content_with_prefix = format!("{} {}", prefix, truncated);
         // Use fixed width of 100 characters for the content area
