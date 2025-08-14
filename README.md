@@ -19,11 +19,12 @@ Coro Code is a high-performance AI coding agent written in Rust with a rich term
 
 ## ✨ Highlights
 
-- 🦀 **Fast Rust core** and clean architecture with an output abstraction layer
-- 🎨 **Interactive TUI** built on iocraft with real-time status and animations
-- 🛠️ **Powerful tool system**: bash, edit, json_edit, thinking, task_done, ckg, mcp
-- 🤖 **Providers**: OpenAI ready; Anthropic and Google in progress
-- 🔍 **Smart file search** with @path syntax, Git-aware, and blazing fast
+- 🚀 **High Performance**: Written in Rust for speed and memory safety
+- 🎨 **Rich Terminal UI**: Beautiful, interactive interface with real-time updates
+- 🔧 **Easy Configuration**: Support for multiple LLM providers with flexible config options
+- 🛠️ **Powerful Tools**: Built-in bash execution, file operations, and extensible tool system
+- 🔄 **Environment Variables**: Comprehensive support for API keys, base URLs, and model configuration
+- 📦 **Cross-Platform**: Works seamlessly on macOS, Linux, and Windows
 
 ## 🚀 Quick Start
 
@@ -51,9 +52,7 @@ coro
 coro run "Fix the bug in main.rs"
 ```
 
-## ⚙️ Minimal Config
-
-You can configure via environment variables or simple JSON files.
+### Configuration
 
 **Option A:** Environment variables
 
@@ -71,7 +70,9 @@ export CORO_BASE_URL="https://api.custom.com"
 export CORO_MODEL="custom-model"
 ```
 
-**Option B:** JSON files in your working directory
+**Option B:** Configuration file
+
+Create a `coro.json` file:
 
 ```json
 {
@@ -83,7 +84,20 @@ export CORO_MODEL="custom-model"
 }
 ```
 
-### 🤖 Supported Models
+### Usage
+
+```bash
+# Interactive mode
+coro interactive
+
+# Direct command
+coro "Help me refactor this function"
+
+# With specific config
+coro --config custom.json "Analyze this codebase"
+```
+
+## 🤖 Supported Models
 
 | Provider         | Models                  | Status    |
 | ---------------- | ----------------------- | --------- |
@@ -113,64 +127,66 @@ export CORO_MODEL="custom-model"
 
 ## 🗺️ Roadmap
 
+**Status Legend:** ✅ Completed | 🚧 In Progress | 📋 Planned
+
 <details>
 <summary><strong>🚀 Phase 1: Core Experience</strong></summary>
 
-| Priority | Feature                                  | Description                                                                                  |
-| -------- | ---------------------------------------- | -------------------------------------------------------------------------------------------- |
-| 🔥 High  | **First-run config onboarding**          | Guided wizard (detect/create openai.json or env vars), API key validation, sensible defaults |
-| 🔥 High  | **Refactor and optimize config loading** | Unified precedence (CLI args > env > JSON), clearer errors/diagnostics, optional hot-reload  |
-| 🔥 High  | **Tool Call permission system**          | Allowlist by tool/command/dir, interactive confirmations, sensitive-operation guardrails     |
+| Priority | Status | Feature                           | Description                                                                                                     |
+| -------- | ------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 🔥 High  | 🚧     | **First-time Setup Management**   | Guided wizard (detect/create openai.json or env vars), API key validation, default models & examples            |
+| 🔥 High  | ✅     | **Refactor Config Loading Logic** | Unified priority (CLI args > env vars > JSON file), friendly error messages & diagnostics, optional hot reload  |
+| 🔥 High  | 📋     | **Tool Call Permission System**   | Tool/command/directory whitelist, interactive confirmation, privilege escalation & sensitive operation warnings |
 
 </details>
 
 <details>
-<summary><strong>🎨 Phase 2: Enhanced UX</strong></summary>
+<summary><strong>🎨 Phase 2: User Experience Enhancement</strong></summary>
 
-| Priority  | Feature                      | Description                                                                  |
-| --------- | ---------------------------- | ---------------------------------------------------------------------------- |
-| 🟡 Medium | **CORO.md custom prompts**   | Project/dir-level overrides, scenario templates (bugfix/refactor/docs/tests) |
-| 🟡 Medium | **UI layout unification**    | Consistent Header/Status/Input, keyboard/interaction coherence               |
-| 🟡 Medium | **Trajectory replay/export** | Visualization, one-click replay, export to JSON/Markdown                     |
-| 🎨 Low    | **Need a cli LOGO**          | Like gemini-cli's style                                                      |
+| Priority  | Status | Feature                                  | Description                                                                                      |
+| --------- | ------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| 🟡 Medium | 📋     | **CORO.md Custom Prompts Support**       | Project/subdirectory level overrides, scenario templates (bugfix/refactor/docs/test)             |
+| 🟡 Medium | 🚧     | **UI Layout Optimization & Unification** | Header/Status/Input style consistency, keyboard shortcuts & interaction consistency optimization |
+| 🟡 Medium | 📋     | **Trajectory Replay & Export**           | Trajectory visualization, one-click replay, export to JSON/Markdown                              |
+| 🎨 Low    | 📋     | **Logo Design (gemini-cli style)**       | Visual identity design                                                                           |
 
 </details>
 
 <details>
 <summary><strong>🤖 Phase 3: Intelligence & Performance</strong></summary>
 
-| Priority  | Feature                              | Description                                                        |
-| --------- | ------------------------------------ | ------------------------------------------------------------------ |
-| 🟡 Medium | **Multi-model and auto-routing**     | Pick model per task type, graceful fallback and retry strategies   |
-| 🟡 Medium | **Context optimization and caching** | File summary cache, dedup repeated refs, token budget control      |
-| 🔵 Low    | **MCP ecosystem**                    | Presets/templates for common providers, easy on/off external tools |
+| Priority  | Status | Feature                            | Description                                                                   |
+| --------- | ------ | ---------------------------------- | ----------------------------------------------------------------------------- |
+| 🟡 Medium | 📋     | **Multi-model & Auto Routing**     | Auto model selection by task type, failure auto-downgrade & retry strategies  |
+| 🟡 Medium | 📋     | **Context Optimization & Caching** | File summary caching, duplicate reference deduplication, token budget control |
+| 🔵 Low    | 📋     | **MCP Extension Ecosystem**        | Common provider presets & templates, one-click start/stop external tools      |
 
 </details>
 
 <details>
 <summary><strong>🌐 Phase 4: Platform & Ecosystem</strong></summary>
 
-| Priority | Feature                   | Description                                                                         |
-| -------- | ------------------------- | ----------------------------------------------------------------------------------- |
-| 🔵 Low   | **Core as WASM**          | Run in browser/plug-in contexts with isomorphic tool interfaces and minimal runtime |
-| 🔵 Low   | **Cross-platform polish** | macOS/Linux/Windows/WSL nuances and stability                                       |
-| 🔵 Low   | **Pluggable tool system** | Spec for third-party tools, versioning and dependency declaration                   |
+| Priority | Status | Feature                        | Description                                                                   |
+| -------- | ------ | ------------------------------ | ----------------------------------------------------------------------------- |
+| 🔵 Low   | 📋     | **Core WASM Support**          | Browser/plugin environment ready, isomorphic tool interface & minimal runtime |
+| 🔵 Low   | 📋     | **Cross-platform Enhancement** | macOS/Linux/Windows/WSL detail adaptation & stability improvements            |
+| 🔵 Low   | 📋     | **Plugin Tool System**         | Third-party tool registration spec, version & dependency declaration          |
 
 </details>
 
 <details>
-<summary><strong>🛡️ Phase 5: Safety & Quality</strong></summary>
+<summary><strong>🛡️ Phase 5: Security & Quality</strong></summary>
 
-| Priority  | Feature                      | Description                                                              |
-| --------- | ---------------------------- | ------------------------------------------------------------------------ |
-| 🟡 Medium | **Safety and rate limiting** | Sandbox mode (restricted bash/network toggle), concurrency and rate caps |
-| 🔵 Low    | **Testing and benchmarking** | E2e samples, performance baselines and comparison reports                |
+| Priority  | Status | Feature                      | Description                                                                  |
+| --------- | ------ | ---------------------------- | ---------------------------------------------------------------------------- |
+| 🟡 Medium | 📋     | **Security & Rate Limiting** | Sandbox mode (restricted bash/network switches), concurrency & rate limiting |
+| 🔵 Low    | 📋     | **Testing & Benchmarks**     | End-to-end test cases, performance benchmarks & comparison reports           |
 
 </details>
 
 ## 📄 License
 
-Dual-licensed at your option:
+Dual licensed under your choice of:
 
 - **Apache-2.0** ([LICENSE-APACHE](LICENSE-APACHE))
 - **MIT** ([LICENSE-MIT](LICENSE-MIT))
