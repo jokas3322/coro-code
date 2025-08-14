@@ -11,8 +11,8 @@ use crate::interactive::file_search::{
 };
 use crate::interactive::input_history::InputHistory;
 use crate::interactive::message_handler::AppMessage;
-use iocraft::prelude::*;
 use coro_core::ResolvedLlmConfig;
+use iocraft::prelude::*;
 use std::cmp::min;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -244,7 +244,7 @@ pub fn EnhancedTextInput(
                                 // If this Enter comes immediately after burst typing/paste, treat as newline (not file pick)
                                 let recent_text = Instant::now()
                                     .duration_since(*last_text_time.read())
-                                    <= Duration::from_millis(100);
+                                    <= Duration::from_millis(800);
                                 if recent_text && matches!(code, KeyCode::Enter) {
                                     // Close popup and let the general handler below process Enter as newline
                                     show_file_list.set(false);
@@ -565,7 +565,7 @@ pub fn EnhancedTextInput(
                                 // treat it as a newline instead of submit.
                                 let recent_text = Instant::now()
                                     .duration_since(*last_text_time.read())
-                                    <= Duration::from_millis(800);
+                                    <= Duration::from_millis(10);
                                 if modifiers.contains(KeyModifiers::SHIFT) || recent_text {
                                     // Insert newline - use safe character insertion
                                     let safe_pos = pos.min(value.len());
