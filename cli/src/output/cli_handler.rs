@@ -55,60 +55,6 @@ impl CliOutputHandler {
     pub fn default() -> Self {
         Self::new(CliOutputConfig::default())
     }
-
-    /// Handle real-time tool execution updates
-    async fn handle_tool_update(
-        &self,
-        tool_info: &coro_core::output::ToolExecutionInfo,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        if !self.config.realtime_updates {
-            return Ok(());
-        }
-
-        let mut active_tools = self.active_tools.lock().await;
-
-        match tool_info.status {
-            ToolExecutionStatus::Executing => {
-                // Show initial executing status
-                println!("{}", self.tool_formatter.format_tool_status(tool_info));
-                active_tools.insert(tool_info.execution_id.clone(), tool_info.clone());
-            }
-            ToolExecutionStatus::Success | ToolExecutionStatus::Error => {
-                // Update the status line and show result
-                if active_tools.contains_key(&tool_info.execution_id) {
-                    // Clear current line and move cursor up to overwrite the executing line
-                    print!("\x1b[1A\x1b[2K\r");
-                    println!("{}", self.tool_formatter.format_tool_status(tool_info));
-
-                    // Show result content if available
-                    if let Some(result_display) = self.tool_formatter.format_tool_result(tool_info)
-                    {
-                        println!("{}", result_display);
-                    }
-
-                    // Show diff for edit tools
-                    if tool_info.tool_name == "str_replace_based_edit_tool" {
-                        if let Some(diff_display) =
-                            self.diff_formatter.format_edit_result(tool_info)
-                        {
-                            println!("{}", diff_display);
-                        }
-                    }
-
-                    active_tools.remove(&tool_info.execution_id);
-                } else {
-                    // Tool wasn't tracked, just show the final status
-                    println!("{}", self.tool_formatter.format_tool_status(tool_info));
-                    if let Some(result_display) = self.tool_formatter.format_tool_result(tool_info)
-                    {
-                        println!("{}", result_display);
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
 }
 
 #[async_trait]
@@ -141,13 +87,13 @@ impl AgentOutput for CliOutputHandler {
                 }
 
                 // Always show execution statistics
-                println!("📈 Executed {} steps", context.current_step);
-                println!("⏱️  Duration: {:.2}s", context.execution_time.as_secs_f64());
+                debug!("📈 Executed {} steps", context.current_step);
+                debug!("⏱️  Duration: {:.2}s", context.execution_time.as_secs_f64());
 
                 // Show token usage if available
                 let token_usage = &context.token_usage;
                 if token_usage.total_tokens > 0 {
-                    println!(
+                    debug!(
                         "🪙 Tokens: {} input + {} output = {} total",
                         token_usage.input_tokens,
                         token_usage.output_tokens,
@@ -179,7 +125,7 @@ impl AgentOutput for CliOutputHandler {
             }
 
             AgentEvent::ToolExecutionUpdated { tool_info } => {
-                self.handle_tool_update(&tool_info).await?;
+                // ...
             }
 
             AgentEvent::ToolExecutionCompleted { tool_info } => {

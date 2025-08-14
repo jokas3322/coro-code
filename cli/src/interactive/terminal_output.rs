@@ -36,9 +36,7 @@ pub fn output_content_block<T: OutputHandle>(
     let wrapped_lines = wrap_text(content, terminal_width);
 
     // Add empty line before each block for proper spacing, except for certain types
-    let should_add_empty_line = !content.contains("⎿")
-        && block_type != ContentBlock::UserInput
-        && block_type != ContentBlock::ToolResult;
+    let should_add_empty_line = !content.contains("⎿");
     if should_add_empty_line {
         stdout.println("");
     }

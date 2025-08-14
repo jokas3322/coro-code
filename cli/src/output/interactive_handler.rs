@@ -11,7 +11,7 @@ use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 
 /// Tools that should not display status indicators
-static SILENT_TOOLS: &[&str] = &["sequentialthinking", "status_report"];
+static SILENT_TOOLS: &[&str] = &["status_report"];
 
 /// Check if a tool should be silent (no status display)
 fn is_silent_tool(tool_name: &str) -> bool {

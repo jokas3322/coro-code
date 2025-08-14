@@ -2,6 +2,7 @@
 
 use coro_core::output::{ToolExecutionInfo, ToolExecutionStatus};
 use std::path::Path;
+use tracing::debug;
 
 // ANSI color codes
 const RED_BG: &str = "\x1b[41m"; // Red background
@@ -23,6 +24,12 @@ impl ToolFormatter {
 
     /// Format tool execution status for CLI display
     pub fn format_tool_status(&self, tool_info: &ToolExecutionInfo) -> String {
+        if tool_info.tool_name == "sequentialthinking" {
+            let result = tool_info.result.as_ref().map_or("", |r| &r.content);
+            debug!("result: {}", result);
+            return String::from(result);
+        }
+
         // Don't show status for task_done tool
         if tool_info.tool_name == "task_done" {
             return String::new();

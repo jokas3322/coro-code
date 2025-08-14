@@ -66,11 +66,16 @@ pub fn DynamicStatusLine(
         while let Ok(event) = rx.recv().await {
             match event {
                 AppMessage::AgentTaskStarted { operation } => {
+                    // Only reset timer and tokens when a new task actually starts.
+                    // Subsequent status updates during the same task should not reset elapsed time or tokens.
+                    let already_processing = *is_processing_clone.read();
                     is_processing_clone.set(true);
                     operation_clone.set(operation);
-                    start_time_clone.set(std::time::Instant::now());
-                    current_tokens_clone.set(0);
-                    target_tokens_clone.set(0);
+                    if !already_processing {
+                        start_time_clone.set(std::time::Instant::now());
+                        current_tokens_clone.set(0);
+                        target_tokens_clone.set(0);
+                    }
                 }
                 AppMessage::AgentExecutionCompleted => {
                     is_processing_clone.set(false);

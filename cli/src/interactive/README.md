@@ -233,6 +233,7 @@ Shows real-time agent execution status, progress, and token usage.
 - Spinner animation for visual feedback
 - Elapsed time tracking
 - Interrupt instruction display
+- Status updates via `status_report` no longer reset elapsed time or token counters during a running task (only the first start initializes them).
 
 ### `router.rs` - Router Component
 
