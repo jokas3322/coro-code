@@ -302,7 +302,7 @@ impl Default for InputHistory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use trae_agent_rs_core::output::NullOutput;
+    use coro_core::output::NullOutput;
 
     #[tokio::test]
     async fn test_add_entry() {

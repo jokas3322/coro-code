@@ -179,8 +179,8 @@ impl coro_core::tools::ToolFactory for StatusReportToolFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use coro_core::tools::ToolCall;
     use serde_json::json;
-    use trae_agent_rs_core::tools::ToolCall;
 
     #[tokio::test]
     async fn test_status_report_basic() {
