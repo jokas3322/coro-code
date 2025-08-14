@@ -6,11 +6,11 @@ use crate::interactive::components::logo::output_logo_to_terminal;
 use crate::interactive::components::status_line::StatusLineContext;
 use crate::interactive::message_handler::{app_message_to_ui_message, AppMessage};
 use crate::interactive::pages::main_page::MainPage;
-use crate::interactive::router::{Route, UIRouter, UIRouterBuilder};
+use crate::interactive::router::{UIRouter, UIRouterBuilder};
 use crate::interactive::terminal_output::{output_content_block, overwrite_previous_lines};
 use anyhow::Result;
-use iocraft::prelude::*;
 use coro_core::ResolvedLlmConfig;
+use iocraft::prelude::*;
 use regex::Regex;
 use std::path::PathBuf;
 use tokio::sync::broadcast;
@@ -536,9 +536,9 @@ fn TraeApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         ui_sender: app_context.ui_sender.clone(),
     };
 
-    // Create router configuration with main page
-    let router_props = UIRouterBuilder::new()
-        .add_route(Route::new("main", "Main").as_default(), move |_hooks| {
+    // Create router configuration with main page using new API
+    let build_result = UIRouterBuilder::new()
+        .route("main", "Main", move |_hooks| {
             element! {
                 MainPage(
                     status_context: status_context.clone(),
@@ -547,11 +547,16 @@ fn TraeApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
             }
             .into()
         })
+        .default("main")
         .build()
         .expect("Failed to build router");
 
     element! {
-        UIRouter(router: router_props.router, pages: router_props.pages, fallback_page: router_props.fallback_page)
+        UIRouter(
+            handle: build_result.props.handle,
+            pages: build_result.props.pages,
+            fallback_page: build_result.props.fallback_page
+        )
     }
 }
 

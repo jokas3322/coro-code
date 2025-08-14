@@ -4,17 +4,11 @@
 //! for the routing system.
 
 use std::collections::HashMap;
+use std::fmt;
 
 /// Unique identifier for a route
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RouteId(pub String);
-
-impl RouteId {
-    /// Create a new route ID
-    pub fn new(id: impl Into<String>) -> Self {
-        Self(id.into())
-    }
-}
 
 impl From<&str> for RouteId {
     fn from(id: &str) -> Self {
@@ -25,6 +19,24 @@ impl From<&str> for RouteId {
 impl From<String> for RouteId {
     fn from(id: String) -> Self {
         Self(id)
+    }
+}
+
+impl fmt::Display for RouteId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl AsRef<str> for RouteId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::borrow::Borrow<str> for RouteId {
+    fn borrow(&self) -> &str {
+        &self.0
     }
 }
 
@@ -53,23 +65,5 @@ impl Route {
             is_default: false,
             metadata: HashMap::new(),
         }
-    }
-
-    /// Set the description for this route
-    pub fn with_description(mut self, description: impl Into<String>) -> Self {
-        self.description = Some(description.into());
-        self
-    }
-
-    /// Mark this route as the default route
-    pub fn as_default(mut self) -> Self {
-        self.is_default = true;
-        self
-    }
-
-    /// Add metadata to this route
-    pub fn with_metadata(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.metadata.insert(key.into(), value.into());
-        self
     }
 }

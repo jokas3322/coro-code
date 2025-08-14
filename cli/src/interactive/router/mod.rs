@@ -9,7 +9,10 @@ pub mod router;
 
 // Re-export commonly used types
 pub use route::{Route, RouteId};
-pub use router::{Router, RouterConfig, RouterState};
+pub use router::{Router, RouterConfig, RouterError, RouterResult, RouterState};
 
 // Re-export UI integration
-pub use integration::{PageRenderer, UIRouter, UIRouterBuilder, UIRouterProps};
+pub use integration::{
+    use_router, PageRenderer, RouterHandle, UIRouter, UIRouterBuildResult, UIRouterBuilder,
+    UIRouterProps,
+};

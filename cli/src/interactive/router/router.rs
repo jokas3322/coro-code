@@ -6,6 +6,22 @@
 use super::route::{Route, RouteId};
 use std::collections::HashMap;
 
+/// Structured error type for router operations
+#[derive(Debug, thiserror::Error)]
+pub enum RouterError {
+    #[error("No routes configured")]
+    NoRoutes,
+
+    #[error("Route '{0}' not found")]
+    RouteNotFound(String),
+
+    #[error("Initial route '{0}' not found in configuration")]
+    InitialRouteMissing(String),
+}
+
+/// Type alias for router operation results
+pub type RouterResult<T> = Result<T, RouterError>;
+
 /// Current state of the router
 #[derive(Debug, Clone)]
 pub struct RouterState {
@@ -32,13 +48,13 @@ impl RouterState {
         // Add current route to history if it's different
         if self.current_route != route_id {
             self.history.insert(0, self.current_route.clone());
-            
+
             // Trim history if it exceeds max size
             if self.history.len() > self.max_history {
                 self.history.truncate(self.max_history);
             }
         }
-        
+
         self.current_route = route_id;
     }
 
@@ -61,11 +77,6 @@ impl RouterState {
     /// Get the current route ID
     pub fn current_route(&self) -> &RouteId {
         &self.current_route
-    }
-
-    /// Get the navigation history
-    pub fn history(&self) -> &[RouteId] {
-        &self.history
     }
 }
 
@@ -96,12 +107,12 @@ impl RouterConfig {
     /// Add a route to the configuration
     pub fn add_route(mut self, route: Route) -> Self {
         let route_id = route.id.clone();
-        
+
         // Set as default if this is marked as default and no default exists
         if route.is_default && self.default_route.is_none() {
             self.default_route = Some(route_id.clone());
         }
-        
+
         self.routes.insert(route_id, route);
         self
     }
@@ -110,23 +121,6 @@ impl RouterConfig {
     pub fn with_default_route(mut self, route_id: RouteId) -> Self {
         self.default_route = Some(route_id);
         self
-    }
-
-    /// Disable navigation history
-    pub fn without_history(mut self) -> Self {
-        self.enable_history = false;
-        self
-    }
-
-    /// Set maximum history size
-    pub fn with_max_history(mut self, max_history: usize) -> Self {
-        self.max_history = max_history;
-        self
-    }
-
-    /// Get a route by ID
-    pub fn get_route(&self, route_id: &RouteId) -> Option<&Route> {
-        self.routes.get(route_id)
     }
 
     /// Get the default route ID
@@ -157,19 +151,19 @@ pub struct Router {
 
 impl Router {
     /// Create a new router with the given configuration
-    pub fn new(config: RouterConfig) -> Result<Self, String> {
+    pub fn new(config: RouterConfig) -> RouterResult<Self> {
         // Determine initial route
         let initial_route = if let Some(default_route) = config.default_route() {
             default_route.clone()
         } else if let Some((route_id, _)) = config.routes().iter().next() {
             route_id.clone()
         } else {
-            return Err("No routes configured".to_string());
+            return Err(RouterError::NoRoutes);
         };
 
         // Validate that the initial route exists
         if !config.routes().contains_key(&initial_route) {
-            return Err(format!("Initial route '{}' not found in configuration", initial_route.0));
+            return Err(RouterError::InitialRouteMissing(initial_route.0));
         }
 
         let mut state = RouterState::new(initial_route);
@@ -182,23 +176,12 @@ impl Router {
         Ok(Self { config, state })
     }
 
-    /// Get the current router state
-    pub fn state(&self) -> &RouterState {
-        &self.state
-    }
-
-    /// Get the router configuration
-    pub fn config(&self) -> &RouterConfig {
-        &self.config
-    }
-
-    /// Navigate to a route by ID
-    pub fn navigate_to(&mut self, route_id: RouteId) -> Result<(), String> {
-        // Validate that the route exists
+    /// Navigate to a route (new preferred method)
+    pub fn navigate(&mut self, id: impl Into<RouteId>) -> RouterResult<()> {
+        let route_id = id.into();
         if !self.config.routes().contains_key(&route_id) {
-            return Err(format!("Route '{}' not found", route_id.0));
+            return Err(RouterError::RouteNotFound(route_id.0));
         }
-
         self.state.navigate_to(route_id);
         Ok(())
     }
@@ -219,7 +202,7 @@ impl Router {
 
     /// Get the current route
     pub fn current_route(&self) -> Option<&Route> {
-        self.config.get_route(self.state.current_route())
+        self.config.routes().get(self.state.current_route())
     }
 
     /// Get the current route ID

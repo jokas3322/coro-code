@@ -9,6 +9,16 @@ The router system consists of three main components:
 1. **Route Definition** (`route.rs`) - Defines individual routes with metadata
 2. **Router State Management** (`router.rs`) - Manages navigation state and history
 3. **Router Configuration** (`router.rs`) - Configures available routes and settings
+4. **UI Integration** (`integration.rs`) - Provides UI components and hooks for seamless integration
+
+## Key Features
+
+- **Structured Error Handling**: `RouterError` enum and `RouterResult<T>` type alias for better error handling
+- **Ergonomic Navigation API**: `router.navigate("route_id")` accepts `&str` directly
+- **UI-Friendly Router Handle**: `RouterHandle` for shared navigation control in UI components
+- **Streamlined Builder API**: Methods like `route()` and `default()` for less boilerplate
+- **Type Safety**: `RouteId` implements `Display`, `AsRef<str>`, and `Borrow<str>`
+- **Clean Interface**: Focused API design for common routing patterns
 
 ## Core Types
 
@@ -19,10 +29,7 @@ Represents a single route with metadata:
 ```rust
 use trae_agent_rs_core::interactive::router::Route;
 
-let route = Route::new("home", "Home Page")
-    .with_description("The main landing page")
-    .as_default()
-    .with_metadata("icon", "🏠");
+let route = Route::new("home", "Home Page");
 ```
 
 ### `RouterState`
@@ -32,10 +39,10 @@ Manages the current navigation state:
 ```rust
 use trae_agent_rs_core::interactive::router::{RouterState, RouteId};
 
-let mut state = RouterState::new(RouteId::from("home"));
+let mut state = RouterState::new("home".into());
 
 // Navigate to a new route
-state.navigate_to(RouteId::from("about"));
+state.navigate_to("about".into());
 
 // Go back to previous route
 if state.can_go_back() {
@@ -51,9 +58,9 @@ Configures the router with available routes:
 use trae_agent_rs_core::interactive::router::{RouterConfig, Route};
 
 let config = RouterConfig::new()
-    .add_route(Route::new("home", "Home").as_default())
+    .add_route(Route::new("home", "Home"))
     .add_route(Route::new("about", "About"))
-    .with_max_history(100);
+    .with_default_route("home".into());
 ```
 
 ### `Router`
@@ -61,15 +68,17 @@ let config = RouterConfig::new()
 The main router that combines configuration and state:
 
 ```rust
-use trae_agent_rs_core::interactive::router::{Router, RouterConfig, Route};
+use trae_agent_rs_core::interactive::router::{Router, RouterConfig, Route, RouterResult};
 
 let config = RouterConfig::new()
-    .add_route(Route::new("home", "Home").as_default());
+    .add_route(Route::new("home", "Home"))
+    .with_default_route("home".into());
 
+// Create router
 let mut router = Router::new(config)?;
 
-// Navigate to different routes
-router.navigate_to("about".into())?;
+// Navigate to routes
+router.navigate("about")?;
 
 // Get current route information
 if let Some(current_route) = router.current_route() {
@@ -89,15 +98,40 @@ if let Some(current_route) = router.current_route() {
 
 This router module is designed for modern UI framework applications. It provides UI-specific components for easy integration:
 
-```rust
-use crate::interactive::router::{UIRouter, UIRouterBuilder, Route};
+### Builder API
 
-let router_props = UIRouterBuilder::new()
-    .add_route(
-        Route::new("main", "Main").as_default(),
-        |_hooks| element! { MainPage() }.into()
-    )
+```rust
+use crate::interactive::router::{UIRouterBuilder, RouterHandle, use_router};
+
+// Build router
+let build_result = UIRouterBuilder::new()
+    .route("home", "Home", |_hooks| element! { HomePage() }.into())
+    .route("settings", "Settings", |_hooks| element! { SettingsPage() }.into())
+    .default("home")
     .build()?;
+
+// Use in UI component
+element! {
+    UIRouter(
+        handle: build_result.handle.clone(),
+        pages: build_result.props.pages,
+        fallback_page: build_result.props.fallback_page,
+    )
+}
+
+// Navigate from any UI component
+#[component]
+fn NavigationButton(handle: &RouterHandle) -> impl Into<AnyElement<'static>> {
+    let current = use_router(handle);
+
+    element! {
+        Button(on_press: move || {
+            let _ = handle.navigate("settings");
+        }) {
+            Text(content: "Go to Settings")
+        }
+    }
+}
 ```
 
 ## Error Handling
@@ -147,23 +181,18 @@ use crate::interactive::router::{
 };
 
 // Create router with pages
-let router_props = UIRouterBuilder::new()
-    .add_route(
-        Route::new("home", "Home").as_default(),
-        |_hooks| element! { Text(content: "Home Page") }.into()
-    )
-    .add_route(
-        Route::new("settings", "Settings"),
-        |_hooks| element! { Text(content: "Settings Page") }.into()
-    )
+let build_result = UIRouterBuilder::new()
+    .route("home", "Home", |_hooks| element! { Text(content: "Home Page") }.into())
+    .route("settings", "Settings", |_hooks| element! { Text(content: "Settings Page") }.into())
+    .default("home")
     .build()?;
 
 // Use in UI component
 element! {
     UIRouter(
-        router: router_props.router,
-        pages: router_props.pages,
-        fallback_page: router_props.fallback_page
+        handle: build_result.handle,
+        pages: build_result.props.pages,
+        fallback_page: build_result.props.fallback_page
     )
 }
 ```
@@ -171,6 +200,57 @@ element! {
 ## Reusable Design
 
 This router implementation is designed as a reusable routing solution. The modular design allows it to be extracted and used in other applications.
+
+## API Overview
+
+### Router Creation and Navigation
+
+```rust
+use crate::interactive::router::{Router, RouterConfig, Route, RouterResult};
+
+let config = RouterConfig::new()
+    .add_route(Route::new("home", "Home"))
+    .with_default_route("home".into());
+
+// Create router
+let mut router = Router::new(config)?;
+
+// Navigate to routes
+router.navigate("about")?;
+
+// Get current route information
+if let Some(current_route) = router.current_route() {
+    println!("Current route: {}", current_route.name);
+}
+```
+
+### UI Router Building
+
+```rust
+let build = UIRouterBuilder::new()
+    .route("home", "Home", |_| element!{...}.into())
+    .route("settings", "Settings", |_| element!{...}.into())
+    .default("home")
+    .build()?;
+
+element! {
+    UIRouter(
+        handle: build.handle,
+        pages: build.props.pages,
+        fallback_page: build.props.fallback_page
+    )
+}
+```
+
+### UI Navigation
+
+```rust
+// Get current route
+let current = use_router(&handle);
+
+// Navigate from UI components
+handle.navigate("new_route")?;
+```
 
 ## Standalone Core Components
 
