@@ -195,8 +195,24 @@ impl CliConfigLoader {
         let google_base_url = std::env::var("GOOGLE_BASE_URL").ok();
         let azure_base_url = std::env::var("AZURE_OPENAI_BASE_URL").ok();
 
-        // Check for generic base URL override
+        // Check for model environment variables
+        let openai_model = std::env::var("OPENAI_MODEL").ok();
+        let anthropic_model = std::env::var("ANTHROPIC_MODEL").ok();
+        let google_model = std::env::var("GOOGLE_MODEL").ok();
+        let azure_model = std::env::var("AZURE_OPENAI_MODEL").ok();
+
+        // Check for generic overrides
         let coro_base_url = std::env::var("CORO_BASE_URL").ok();
+        let coro_model = std::env::var("CORO_MODEL").ok();
+
+        // Check for model environment variables
+        let openai_model = std::env::var("OPENAI_MODEL").ok();
+        let anthropic_model = std::env::var("ANTHROPIC_MODEL").ok();
+        let google_model = std::env::var("GOOGLE_MODEL").ok();
+        let azure_model = std::env::var("AZURE_OPENAI_MODEL").ok();
+
+        // Check for generic model override
+        let coro_model = std::env::var("CORO_MODEL").ok();
 
         let available_keys: Vec<_> = [
             openai_key.as_ref().map(|_| "openai"),
@@ -237,35 +253,44 @@ impl CliConfigLoader {
             }
         };
 
-        let (api_key, default_model, base_url) = match protocol {
+        let (api_key, default_model, base_url, model_env) = match protocol {
             "openai" => (
                 openai_key.unwrap(),
                 "gpt-4o",
                 openai_base_url.or_else(|| coro_base_url.clone()),
+                openai_model,
             ),
             "anthropic" => (
                 anthropic_key.unwrap(),
                 "claude-3-5-sonnet-20241022",
                 anthropic_base_url.or_else(|| coro_base_url.clone()),
+                anthropic_model,
             ),
             "google_ai" => (
                 google_key.unwrap(),
                 "gemini-pro",
                 google_base_url.or_else(|| coro_base_url.clone()),
+                google_model,
             ),
             "azure_openai" => (
                 azure_key.unwrap(),
                 "gpt-4",
                 azure_base_url.or_else(|| coro_base_url.clone()),
+                azure_model,
             ),
             _ => unreachable!(),
         };
+
+        // Determine model with priority: protocol-specific env > generic env > default
+        let model = model_env
+            .or_else(|| coro_model.clone())
+            .unwrap_or_else(|| default_model.to_string());
 
         Ok(RawConfig {
             protocol: protocol.to_string(),
             api_key,
             base_url, // Use environment variable if available, otherwise protocol default
-            model: std::env::var("CORO_MODEL").unwrap_or_else(|_| default_model.to_string()),
+            model,
             params: ModelParams::default(),
             headers: HashMap::new(),
         })

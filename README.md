@@ -62,11 +62,13 @@ You can configure via environment variables or simple JSON files.
 export OPENAI_API_KEY="your_openai_api_key"
 export OPENAI_MODEL="gpt-4o"
 
-# Optional: Custom base URL for OpenAI-compatible APIs
+# Optional: Custom base URL and model for OpenAI-compatible APIs
 export OPENAI_BASE_URL="https://api.deepseek.com"
+export OPENAI_MODEL="deepseek-chat"
 
-# Or use generic base URL for any protocol
+# Or use generic overrides for any protocol
 export CORO_BASE_URL="https://api.custom.com"
+export CORO_MODEL="custom-model"
 ```
 
 **Option B:** JSON files in your working directory
@@ -95,15 +97,19 @@ export CORO_BASE_URL="https://api.custom.com"
 | ----------------------- | ------------------------------------------ | ------------------------------------------- |
 | `OPENAI_API_KEY`        | OpenAI API key                             | `sk-...`                                    |
 | `OPENAI_BASE_URL`       | Custom base URL for OpenAI-compatible APIs | `https://api.deepseek.com`                  |
+| `OPENAI_MODEL`          | Custom model for OpenAI-compatible APIs    | `gpt-4o`, `deepseek-chat`                   |
 | `ANTHROPIC_API_KEY`     | Anthropic API key                          | `sk-ant-...`                                |
 | `ANTHROPIC_BASE_URL`    | Custom base URL for Anthropic API          | `https://api.anthropic.com`                 |
+| `ANTHROPIC_MODEL`       | Custom model for Anthropic API             | `claude-3-5-sonnet-20241022`                |
 | `GOOGLE_API_KEY`        | Google AI API key                          | `AIza...`                                   |
 | `GOOGLE_BASE_URL`       | Custom base URL for Google AI API          | `https://generativelanguage.googleapis.com` |
+| `GOOGLE_MODEL`          | Custom model for Google AI API             | `gemini-pro`, `gemini-1.5-pro`              |
 | `AZURE_OPENAI_API_KEY`  | Azure OpenAI API key                       | `...`                                       |
 | `AZURE_OPENAI_BASE_URL` | Azure OpenAI endpoint                      | `https://your-resource.openai.azure.com`    |
+| `AZURE_OPENAI_MODEL`    | Custom model for Azure OpenAI              | `gpt-4`, `gpt-35-turbo`                     |
 | `CORO_BASE_URL`         | Generic base URL override (any protocol)   | `https://api.custom.com`                    |
 | `CORO_PROTOCOL`         | Force specific protocol                    | `openai`, `anthropic`                       |
-| `CORO_MODEL`            | Override model name                        | `gpt-4o`, `claude-3-5-sonnet`               |
+| `CORO_MODEL`            | Generic model override (any protocol)      | `gpt-4o`, `claude-3-5-sonnet`               |
 
 ## 🗺️ Roadmap
 
