@@ -189,6 +189,15 @@ impl CliConfigLoader {
         let google_key = std::env::var("GOOGLE_API_KEY").ok();
         let azure_key = std::env::var("AZURE_OPENAI_API_KEY").ok();
 
+        // Check for base URL environment variables
+        let openai_base_url = std::env::var("OPENAI_BASE_URL").ok();
+        let anthropic_base_url = std::env::var("ANTHROPIC_BASE_URL").ok();
+        let google_base_url = std::env::var("GOOGLE_BASE_URL").ok();
+        let azure_base_url = std::env::var("AZURE_OPENAI_BASE_URL").ok();
+
+        // Check for generic base URL override
+        let coro_base_url = std::env::var("CORO_BASE_URL").ok();
+
         let available_keys: Vec<_> = [
             openai_key.as_ref().map(|_| "openai"),
             anthropic_key.as_ref().map(|_| "anthropic"),
@@ -228,18 +237,34 @@ impl CliConfigLoader {
             }
         };
 
-        let (api_key, default_model) = match protocol {
-            "openai" => (openai_key.unwrap(), "gpt-4o"),
-            "anthropic" => (anthropic_key.unwrap(), "claude-3-5-sonnet-20241022"),
-            "google_ai" => (google_key.unwrap(), "gemini-pro"),
-            "azure_openai" => (azure_key.unwrap(), "gpt-4"),
+        let (api_key, default_model, base_url) = match protocol {
+            "openai" => (
+                openai_key.unwrap(),
+                "gpt-4o",
+                openai_base_url.or_else(|| coro_base_url.clone()),
+            ),
+            "anthropic" => (
+                anthropic_key.unwrap(),
+                "claude-3-5-sonnet-20241022",
+                anthropic_base_url.or_else(|| coro_base_url.clone()),
+            ),
+            "google_ai" => (
+                google_key.unwrap(),
+                "gemini-pro",
+                google_base_url.or_else(|| coro_base_url.clone()),
+            ),
+            "azure_openai" => (
+                azure_key.unwrap(),
+                "gpt-4",
+                azure_base_url.or_else(|| coro_base_url.clone()),
+            ),
             _ => unreachable!(),
         };
 
         Ok(RawConfig {
             protocol: protocol.to_string(),
             api_key,
-            base_url: None, // Will use protocol default
+            base_url, // Use environment variable if available, otherwise protocol default
             model: std::env::var("CORO_MODEL").unwrap_or_else(|_| default_model.to_string()),
             params: ModelParams::default(),
             headers: HashMap::new(),

@@ -61,6 +61,12 @@ You can configure via environment variables or simple JSON files.
 # OpenAI
 export OPENAI_API_KEY="your_openai_api_key"
 export OPENAI_MODEL="gpt-4o"
+
+# Optional: Custom base URL for OpenAI-compatible APIs
+export OPENAI_BASE_URL="https://api.deepseek.com"
+
+# Or use generic base URL for any protocol
+export CORO_BASE_URL="https://api.custom.com"
 ```
 
 **Option B:** JSON files in your working directory
@@ -82,6 +88,22 @@ export OPENAI_MODEL="gpt-4o"
 | 🟢 **OpenAI**    | `gpt-4o`, `gpt-4o-mini` | ✅ Ready  |
 | 🟡 **Anthropic** | `claude-3.5` family     | 🚧 Coming |
 | 🔵 **Google**    | `gemini-1.5` family     | 🚧 Coming |
+
+### 🔧 Environment Variables Reference
+
+| Variable                | Description                                | Example                                     |
+| ----------------------- | ------------------------------------------ | ------------------------------------------- |
+| `OPENAI_API_KEY`        | OpenAI API key                             | `sk-...`                                    |
+| `OPENAI_BASE_URL`       | Custom base URL for OpenAI-compatible APIs | `https://api.deepseek.com`                  |
+| `ANTHROPIC_API_KEY`     | Anthropic API key                          | `sk-ant-...`                                |
+| `ANTHROPIC_BASE_URL`    | Custom base URL for Anthropic API          | `https://api.anthropic.com`                 |
+| `GOOGLE_API_KEY`        | Google AI API key                          | `AIza...`                                   |
+| `GOOGLE_BASE_URL`       | Custom base URL for Google AI API          | `https://generativelanguage.googleapis.com` |
+| `AZURE_OPENAI_API_KEY`  | Azure OpenAI API key                       | `...`                                       |
+| `AZURE_OPENAI_BASE_URL` | Azure OpenAI endpoint                      | `https://your-resource.openai.azure.com`    |
+| `CORO_BASE_URL`         | Generic base URL override (any protocol)   | `https://api.custom.com`                    |
+| `CORO_PROTOCOL`         | Force specific protocol                    | `openai`, `anthropic`                       |
+| `CORO_MODEL`            | Override model name                        | `gpt-4o`, `claude-3-5-sonnet`               |
 
 ## 🗺️ Roadmap
 

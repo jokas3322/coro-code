@@ -61,6 +61,12 @@ coro run "Fix the bug in main.rs"
 # OpenAI
 export OPENAI_API_KEY="your_openai_api_key"
 export OPENAI_MODEL="gpt-4o"
+
+# 可选：为 OpenAI 兼容 API 设置自定义 base URL
+export OPENAI_BASE_URL="https://api.deepseek.com"
+
+# 或使用通用 base URL（适用于任何协议）
+export CORO_BASE_URL="https://api.custom.com"
 ```
 
 **方案 B：** 工作目录中的 JSON 文件
@@ -82,6 +88,22 @@ export OPENAI_MODEL="gpt-4o"
 | 🟢 **OpenAI**    | `gpt-4o`, `gpt-4o-mini` | ✅ 已支持 |
 | 🟡 **Anthropic** | `claude-3.5` 系列       | 🚧 计划中 |
 | 🔵 **Google**    | `gemini-1.5` 系列       | 🚧 计划中 |
+
+### 🔧 环境变量参考
+
+| 变量名                  | 描述                                 | 示例                                        |
+| ----------------------- | ------------------------------------ | ------------------------------------------- |
+| `OPENAI_API_KEY`        | OpenAI API 密钥                      | `sk-...`                                    |
+| `OPENAI_BASE_URL`       | OpenAI 兼容 API 的自定义 base URL    | `https://api.deepseek.com`                  |
+| `ANTHROPIC_API_KEY`     | Anthropic API 密钥                   | `sk-ant-...`                                |
+| `ANTHROPIC_BASE_URL`    | Anthropic API 的自定义 base URL      | `https://api.anthropic.com`                 |
+| `GOOGLE_API_KEY`        | Google AI API 密钥                   | `AIza...`                                   |
+| `GOOGLE_BASE_URL`       | Google AI API 的自定义 base URL      | `https://generativelanguage.googleapis.com` |
+| `AZURE_OPENAI_API_KEY`  | Azure OpenAI API 密钥                | `...`                                       |
+| `AZURE_OPENAI_BASE_URL` | Azure OpenAI 端点                    | `https://your-resource.openai.azure.com`    |
+| `CORO_BASE_URL`         | 通用 base URL 覆盖（适用于任何协议） | `https://api.custom.com`                    |
+| `CORO_PROTOCOL`         | 强制指定协议                         | `openai`, `anthropic`                       |
+| `CORO_MODEL`            | 覆盖模型名称                         | `gpt-4o`, `claude-3-5-sonnet`               |
 
 ## 🗺️ 开发路线图
 
