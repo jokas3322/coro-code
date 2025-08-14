@@ -9,6 +9,7 @@ use super::text_utils::wrap_text;
 /// Trait to abstract over different output handles (StdoutHandle, StderrHandle)
 pub trait OutputHandle {
     fn println<S: ToString>(&self, msg: S);
+    fn print<S: ToString>(&self, msg: S);
 }
 
 /// Implementation for iocraft's StdoutHandle
@@ -16,12 +17,20 @@ impl OutputHandle for iocraft::hooks::StdoutHandle {
     fn println<S: ToString>(&self, msg: S) {
         self.println(msg);
     }
+
+    fn print<S: ToString>(&self, msg: S) {
+        self.print(msg);
+    }
 }
 
 /// Implementation for iocraft's StderrHandle
 impl OutputHandle for iocraft::hooks::StderrHandle {
     fn println<S: ToString>(&self, msg: S) {
         self.println(msg);
+    }
+
+    fn print<S: ToString>(&self, msg: S) {
+        self.print(msg);
     }
 }
 
@@ -102,7 +111,8 @@ pub fn overwrite_previous_lines<T: OutputHandle>(
         && block_type != ContentBlock::ToolResult;
 
     // Move cursor up to overwrite the previous message and clear from cursor to end of screen
-    stdout.println(format!("\x1b[{}A\x1b[0J", previous_line_count));
+    // !!!IMPORTANT: Here, `print` must be used; otherwise, an extra blank line will appear.
+    stdout.print(format!("\x1b[{}A\x1b[0J", previous_line_count));
 
     // Add empty line before content if needed
     if should_add_empty_line {
@@ -232,6 +242,12 @@ mod tests {
 
     impl OutputHandle for MockOutputHandle {
         fn println<S: ToString>(&self, msg: S) {
+            self.output.lock().unwrap().push(msg.to_string());
+        }
+
+        fn print<S: ToString>(&self, msg: S) {
+            // For testing purposes, we'll treat print the same as println
+            // In a real implementation, print wouldn't add a newline
             self.output.lock().unwrap().push(msg.to_string());
         }
     }
