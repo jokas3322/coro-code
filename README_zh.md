@@ -1,4 +1,4 @@
-# 🚀 Lode
+# 🚀 Coro Code
 
 <div align="center">
 
@@ -15,7 +15,7 @@ _用 Rust 编写的高性能 AI 编码代理，带有丰富的终端界面_
 
 ---
 
-Lode 是一个用 Rust 编写的高性能 AI 编码代理，带有丰富的终端界面。此前名为 **Trae Agent Rust**，现已更名并聚焦于速度、稳定性与优秀的使用体验，同时保持与原始工具规范的兼容性。
+Coro Code 是一个用 Rust 编写的高性能 AI 编码代理，带有丰富的终端界面。此前名为 **Trae Agent Rust**，现已更名并聚焦于速度、稳定性与优秀的使用体验，同时保持与原始工具规范的兼容性。
 
 ## ✨ 亮点
 
@@ -35,20 +35,20 @@ Lode 是一个用 Rust 编写的高性能 AI 编码代理，带有丰富的终�
 ### 📦 安装
 
 ```bash
-cargo install --git https://github.com/Blushyes/Lode --bin lode
+cargo install --git https://github.com/Blushyes/coro-code --bin coro
 ```
 
 ### ▶️ 运行
 
 ```bash
 # 交互模式（推荐）
-lode interactive
+coro interactive
 
 # 或直接
-lode
+coro
 
 # 单次任务
-lode run "Fix the bug in main.rs"
+coro run "Fix the bug in main.rs"
 ```
 
 ## ⚙️ 最简配置
@@ -100,7 +100,7 @@ export OPENAI_MODEL="gpt-4o"
 
 | 优先级 | 功能特性                                  | 描述                                                   |
 | ------ | ----------------------------------------- | ------------------------------------------------------ |
-| 🟡 中  | **支持 LODE.md 自定义提示词**             | 项目/子目录级覆盖、场景化模板（bugfix/重构/文档/测试） |
+| 🟡 中  | **支持 CORO.md 自定义提示词**             | 项目/子目录级覆盖、场景化模板（bugfix/重构/文档/测试） |
 | 🟡 中  | **UI 布局优化与统一化**                   | Header/Status/Input 风格统一、键位与交互一致性优化     |
 | 🟡 中  | **轨迹回放与导出**                        | Trajectory 可视化、一键回放、导出为 JSON/Markdown      |
 | 🎨 低  | **需要一个和 gemini-cli 风格类似的 logo** | 视觉标识设计                                           |

@@ -91,7 +91,7 @@ impl McpServer {
                     "tools": {}
                 },
                 "clientInfo": {
-                    "name": "lode",
+                    "name": "coro",
                     "version": "0.1.0"
                 }
             }

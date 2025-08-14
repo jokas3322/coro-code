@@ -18,7 +18,7 @@ pub async fn run_command(
     info!("Executing task: {}", task);
 
     use crate::output::cli_handler::{CliOutputConfig, CliOutputHandler};
-    use lode_core::{trajectory::TrajectoryRecorder, AgentBuilder, AgentConfig, OutputMode};
+    use coro_core::{trajectory::TrajectoryRecorder, AgentBuilder, AgentConfig, OutputMode};
 
     // Load LLM configuration
     let llm_config = config_loader.load().await?;
@@ -48,7 +48,7 @@ pub async fn run_command(
 
     // Initialize trajectory recorder
     let trajectory = TrajectoryRecorder::new();
-    let task_entry = lode_core::trajectory::TrajectoryEntry::task_start(
+    let task_entry = coro_core::trajectory::TrajectoryEntry::task_start(
         task.clone(),
         serde_json::json!({"max_steps": max_steps.unwrap_or(200)}),
     );
@@ -58,7 +58,7 @@ pub async fn run_command(
         info!("📊 Trajectory file: {}", trajectory_file.display());
     }
 
-    debug!("🤖 Using Lode Agent system prompt");
+    debug!("🤖 Using coro-code Agent system prompt");
 
     // Get current working directory
     let current_dir = working_dir

@@ -1,17 +1,17 @@
 [package]
-name = "lode-cli"
+name = "coro-cli"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "CLI application for Lode - A high-performance AI coding agent"
+description = "CLI application for coro-code - A high-performance AI coding agent"
 keywords.workspace = true
 categories.workspace = true
 
 [[bin]]
-name = "lode"
+name = "coro"
 path = "src/main.rs"
 
 [dependencies]
@@ -35,7 +35,7 @@ dirs = { workspace = true }
 shellexpand = { workspace = true }
 
 # Local dependencies
-lode-core = { path = "../core" }
+coro-core = { path = "../core" }
 
 # CLI-specific dependencies
 async-trait = "0.1"

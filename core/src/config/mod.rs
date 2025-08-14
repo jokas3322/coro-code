@@ -1,4 +1,4 @@
-//! Minimal configuration module for Lode core
+//! Minimal configuration module for coro-code core
 //!
 //! Only exports pure data types. All loading logic is in CLI layer.
 

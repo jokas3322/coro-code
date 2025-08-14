@@ -2,7 +2,7 @@
 
 use super::formatters::{DiffFormatter, ToolFormatter};
 use async_trait::async_trait;
-use lode_core::output::{AgentEvent, AgentOutput, MessageLevel, ToolExecutionStatus};
+use coro_core::output::{AgentEvent, AgentOutput, MessageLevel, ToolExecutionStatus};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -37,7 +37,7 @@ pub struct CliOutputHandler {
     tool_formatter: ToolFormatter,
     diff_formatter: DiffFormatter,
     /// Track active tool executions for real-time updates
-    active_tools: Arc<Mutex<HashMap<String, lode_core::output::ToolExecutionInfo>>>,
+    active_tools: Arc<Mutex<HashMap<String, coro_core::output::ToolExecutionInfo>>>,
 }
 
 impl CliOutputHandler {
@@ -59,7 +59,7 @@ impl CliOutputHandler {
     /// Handle real-time tool execution updates
     async fn handle_tool_update(
         &self,
-        tool_info: &lode_core::output::ToolExecutionInfo,
+        tool_info: &coro_core::output::ToolExecutionInfo,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         if !self.config.realtime_updates {
             return Ok(());

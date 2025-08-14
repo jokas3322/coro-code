@@ -1,4 +1,4 @@
-# 🚀 Lode
+# 🚀 Coro Code
 
 <div align="center">
 
@@ -15,7 +15,7 @@ _A high-performance AI coding agent written in Rust with a rich terminal UI_
 
 ---
 
-Lode is a high-performance AI coding agent written in Rust with a rich terminal UI. Formerly known as **Trae Agent Rust**, it remains compatible with the original tool spec while focusing on speed, reliability, and great UX.
+Coro Code is a high-performance AI coding agent written in Rust with a rich terminal UI. Formerly known as **Trae Agent Rust**, it remains compatible with the original tool spec while focusing on speed, reliability, and great UX.
 
 ## ✨ Highlights
 
@@ -35,20 +35,20 @@ Lode is a high-performance AI coding agent written in Rust with a rich terminal 
 ### 📦 Install
 
 ```bash
-cargo install --git https://github.com/Blushyes/Lode --bin lode
+cargo install --git https://github.com/Blushyes/coro-code --bin coro
 ```
 
 ### ▶️ Run
 
 ```bash
 # Interactive mode (recommended)
-lode interactive
+coro interactive
 
 # Or simply
-lode
+coro
 
 # Single task
-lode run "Fix the bug in main.rs"
+coro run "Fix the bug in main.rs"
 ```
 
 ## ⚙️ Minimal Config
@@ -100,7 +100,7 @@ export OPENAI_MODEL="gpt-4o"
 
 | Priority  | Feature                      | Description                                                                  |
 | --------- | ---------------------------- | ---------------------------------------------------------------------------- |
-| 🟡 Medium | **LODE.md custom prompts**   | Project/dir-level overrides, scenario templates (bugfix/refactor/docs/tests) |
+| 🟡 Medium | **CORO.md custom prompts**   | Project/dir-level overrides, scenario templates (bugfix/refactor/docs/tests) |
 | 🟡 Medium | **UI layout unification**    | Consistent Header/Status/Input, keyboard/interaction coherence               |
 | 🟡 Medium | **Trajectory replay/export** | Visualization, one-click replay, export to JSON/Markdown                     |
 | 🎨 Low    | **Need a cli LOGO**          | Like gemini-cli's style                                                      |

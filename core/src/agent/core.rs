@@ -579,7 +579,7 @@ impl Agent for AgentCore {
     }
 
     fn agent_type(&self) -> &str {
-        "lode_agent"
+        "coro_agent"
     }
 
     fn set_trajectory_recorder(&mut self, recorder: TrajectoryRecorder) {
@@ -607,7 +607,7 @@ impl AgentCore {
 
         // Create execution context
         self.execution_context = Some(AgentExecutionContext {
-            agent_id: "lode_agent".to_string(),
+            agent_id: "coro_agent".to_string(),
             task: task.to_string(),
             project_path: project_path.to_string_lossy().to_string(),
             max_steps: self.config.max_steps,

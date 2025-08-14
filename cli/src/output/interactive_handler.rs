@@ -4,7 +4,7 @@
 use super::cli_handler::{CliOutputConfig, CliOutputHandler};
 use super::formatters::{DiffFormatter, ToolFormatter};
 use async_trait::async_trait;
-use lode_core::output::{AgentEvent, AgentOutput, MessageLevel, ToolExecutionStatus};
+use coro_core::output::{AgentEvent, AgentOutput, MessageLevel, ToolExecutionStatus};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -72,7 +72,7 @@ pub struct InteractiveOutputHandler {
     /// Diff formatter for edit results
     diff_formatter: DiffFormatter,
     /// Track active tool executions
-    active_tools: Arc<Mutex<HashMap<String, lode_core::output::ToolExecutionInfo>>>,
+    active_tools: Arc<Mutex<HashMap<String, coro_core::output::ToolExecutionInfo>>>,
 }
 
 impl InteractiveOutputHandler {

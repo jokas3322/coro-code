@@ -1,6 +1,6 @@
 //! Formatting utilities for CLI output
 
-use lode_core::output::{ToolExecutionInfo, ToolExecutionStatus};
+use coro_core::output::{ToolExecutionInfo, ToolExecutionStatus};
 use std::path::Path;
 
 // ANSI color codes

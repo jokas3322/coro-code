@@ -3,7 +3,7 @@
 
 use crate::interactive::message_handler::AppMessage;
 use async_trait::async_trait;
-use lode_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
+use coro_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use serde_json::json;
 use tokio::sync::broadcast;
 
@@ -61,7 +61,7 @@ impl Tool for StatusReportTool {
         })
     }
 
-    async fn execute(&self, call: ToolCall) -> lode_core::error::Result<ToolResult> {
+    async fn execute(&self, call: ToolCall) -> coro_core::error::Result<ToolResult> {
         let status: String = call.get_parameter("status")?;
         let details: Option<String> = call.get_parameter("details").ok();
 
@@ -158,7 +158,7 @@ impl StatusReportToolFactory {
     }
 }
 
-impl lode_core::tools::ToolFactory for StatusReportToolFactory {
+impl coro_core::tools::ToolFactory for StatusReportToolFactory {
     fn create(&self) -> Box<dyn Tool> {
         if let Some(ui_sender) = &self.ui_sender {
             Box::new(StatusReportTool::with_ui_sender(ui_sender.clone()))

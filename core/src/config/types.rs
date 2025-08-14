@@ -1,4 +1,4 @@
-//! Minimal configuration types for Lode core
+//! Minimal configuration types for coro-code core
 //!
 //! Core only accepts fully resolved, validated configuration.
 //! All discovery, loading, and merging happens in CLI layer.

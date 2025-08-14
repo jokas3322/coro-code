@@ -1,12 +1,12 @@
-//! Lode logo component
+//! coro-code logo component
 //!
-//! This module provides the Lode ASCII art logo component with gradient colors.
+//! This module provides the coro-code ASCII art logo component with gradient colors.
 
 use iocraft::prelude::*;
 
 // Static logo lines with individual colors for gradient effect
 // TODO Need a beautiful logo
-pub const LODE_LOGO_LINES: &[&str] = &[
+pub const CORO_LOGO_LINES: &[&str] = &[
     " ███",
     "░░░███",
     "  ░░░███",
@@ -26,12 +26,12 @@ pub const LOGO_COLORS: &[(u8, u8, u8)] = &[
     (0, 195, 99),  // Medium dark
 ];
 
-/// Lode ASCII Art Logo Component with gradient colors
+/// coro-code ASCII Art Logo Component with gradient colors
 #[component]
-pub fn LodeLogo(_hooks: Hooks) -> impl Into<AnyElement<'static>> {
+pub fn CoroLogo(_hooks: Hooks) -> impl Into<AnyElement<'static>> {
     element! {
         View(key: "logo-content", flex_direction: FlexDirection::Column) {
-            #(LODE_LOGO_LINES.iter().enumerate().map(|(i, line)| {
+            #(CORO_LOGO_LINES.iter().enumerate().map(|(i, line)| {
                 let color = LOGO_COLORS.get(i).unwrap_or(&(0, 150, 78));
                 element! {
                     Text(
@@ -45,10 +45,10 @@ pub fn LodeLogo(_hooks: Hooks) -> impl Into<AnyElement<'static>> {
     }
 }
 
-/// Output Lode logo to terminal with colors
+/// Output coro-code logo to terminal with colors
 pub fn output_logo_to_terminal<T: crate::interactive::terminal_output::OutputHandle>(stdout: &T) {
-    // Output Lode logo line by line with colors
-    for (i, line) in LODE_LOGO_LINES.iter().enumerate() {
+    // Output coro-code logo line by line with colors
+    for (i, line) in CORO_LOGO_LINES.iter().enumerate() {
         if !line.trim().is_empty() {
             let color = LOGO_COLORS.get(i).unwrap_or(&(0, 150, 78));
             // Use ANSI color codes for terminal output
@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_logo_lines_count() {
-        assert_eq!(LODE_LOGO_LINES.len(), 5);
+        assert_eq!(CORO_LOGO_LINES.len(), 5);
         assert_eq!(LOGO_COLORS.len(), 7);
     }
 
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_logo_lines_not_empty() {
-        for line in LODE_LOGO_LINES {
+        for line in CORO_LOGO_LINES {
             assert!(!line.is_empty());
         }
     }

@@ -23,8 +23,8 @@ impl Default for MainPageProps {
                 ui_anim: crate::interactive::animation::UiAnimationConfig::default(),
             },
             input_context: InputSectionContext {
-                llm_config: lode_core::ResolvedLlmConfig::new(
-                    lode_core::Protocol::OpenAICompat,
+                llm_config: coro_core::ResolvedLlmConfig::new(
+                    coro_core::Protocol::OpenAICompat,
                     "https://api.openai.com/v1".to_string(),
                     "test-key".to_string(),
                     "gpt-4o".to_string(),

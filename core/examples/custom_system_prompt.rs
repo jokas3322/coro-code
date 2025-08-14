@@ -1,18 +1,18 @@
-//! Example demonstrating how to use custom system prompts with LodeAgent
+//! Example demonstrating how to use custom system prompts with coro-codeAgent
 //!
 //! This example shows three ways to set a custom system prompt:
 //! 1. Through configuration file
 //! 2. Through AgentConfig directly
 //! 3. Dynamically at runtime
 
-use lode_core::{
+use coro_core::{
     agent::AgentCore, output::events::NullOutput, AgentConfig, OutputMode, Protocol,
     ResolvedLlmConfig,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("=== LodeAgent Custom System Prompt Example ===\n");
+    println!("=== coro-codeAgent Custom System Prompt Example ===\n");
 
     // Method 1: Set system prompt through AgentConfig
     println!("1. Setting system prompt through AgentConfig:");
@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     agent.set_system_prompt(None);
 
     if agent.get_configured_system_prompt().is_none() {
-        println!("✓ System prompt cleared, will use default LODE_AGENT_SYSTEM_PROMPT");
+        println!("✓ System prompt cleared, will use default CORO_AGENT_SYSTEM_PROMPT");
     }
 
     println!("\n=== Configuration Example ===");

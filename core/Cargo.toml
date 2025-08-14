@@ -1,12 +1,12 @@
 [package]
-name = "lode-core"
+name = "coro-core"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 homepage.workspace = true
-description = "Core library for Lode - A high-performance AI coding agent"
+description = "Core library for coro-code - A high-performance AI coding agent"
 keywords.workspace = true
 categories.workspace = true
 

@@ -7,7 +7,7 @@ use tracing::info;
 pub async fn tools_command() -> Result<()> {
     info!("Listing available tools");
 
-    use lode_core::tools::ToolRegistry;
+    use coro_core::tools::ToolRegistry;
 
     println!("🛠️  Available Tools\n");
 

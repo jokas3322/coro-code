@@ -1,6 +1,6 @@
-//! # Lode Core
+//! # coro-code Core
 //!
-//! Core library for Lode - a high-performance AI coding agent.
+//! Core library for coro-code - a high-performance AI coding agent.
 //!
 //! This library provides the fundamental building blocks for creating AI agents
 //! that can interact with codebases, execute tools, and perform complex software
@@ -20,7 +20,7 @@ pub use agent::{Agent, AgentBuilder, AgentConfig, OutputMode};
 pub use config::{ModelParams, Protocol, ResolvedLlmConfig};
 pub use trajectory::TrajectoryRecorder;
 
-/// Current version of the lode-core library
+/// Current version of the coro-core library
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Initialize tracing for the library

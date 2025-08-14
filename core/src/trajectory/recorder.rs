@@ -187,7 +187,7 @@ impl TrajectoryRecorder {
             started_at,
             completed_at,
             version: "1.0".to_string(),
-            agent_type: "lode_agent".to_string(),
+            agent_type: "coro_agent".to_string(),
             task,
             success,
             total_steps: entries.len(),

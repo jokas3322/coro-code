@@ -1,14 +1,14 @@
-//! Simple CLI configuration loader for Lode
+//! Simple CLI configuration loader for coro-code
 //!
 //! Implements single-source priority loading with flag overrides:
 //! 1. --config file/dir (highest priority)
-//! 2. Current working directory: ./lode.json or ./.lode/config.json
-//! 3. Git repository root: <repo_root>/.lode/config.json
-//! 4. XDG config: $XDG_CONFIG_HOME/lode/config.json or ~/.config/lode/config.json
+//! 2. Current working directory: ./coro.json or ./.coro/config.json
+//! 3. Git repository root: <repo_root>/.coro/config.json
+//! 4. XDG config: $XDG_CONFIG_HOME/coro/config.json or ~/.config/coro/config.json
 //! 5. Environment variables only (no files)
 
 use anyhow::{anyhow, Context, Result};
-use lode_core::{ModelParams, Protocol, ResolvedLlmConfig};
+use coro_core::{ModelParams, Protocol, ResolvedLlmConfig};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -144,16 +144,16 @@ impl CliConfigLoader {
     async fn try_load_cwd(&self) -> Result<Option<RawConfig>> {
         let cwd = std::env::current_dir()?;
 
-        // Try ./lode.json first
-        let lode_json = cwd.join("lode.json");
-        if lode_json.exists() {
-            return Ok(Some(self.load_file(&lode_json).await?));
+        // Try ./coro.json first
+        let coro_json = cwd.join("coro.json");
+        if coro_json.exists() {
+            return Ok(Some(self.load_file(&coro_json).await?));
         }
 
-        // Try ./.lode/config.json
-        let lode_dir_config = cwd.join(".lode").join("config.json");
-        if lode_dir_config.exists() {
-            return Ok(Some(self.load_file(&lode_dir_config).await?));
+        // Try ./.coro/config.json
+        let coro_dir_config = cwd.join(".coro").join("config.json");
+        if coro_dir_config.exists() {
+            return Ok(Some(self.load_file(&coro_dir_config).await?));
         }
 
         Ok(None)
@@ -162,7 +162,7 @@ impl CliConfigLoader {
     /// Try loading from git repository root
     async fn try_load_git_root(&self) -> Result<Option<RawConfig>> {
         if let Some(git_root) = self.find_git_root()? {
-            let config_path = git_root.join(".lode").join("config.json");
+            let config_path = git_root.join(".coro").join("config.json");
             if config_path.exists() {
                 return Ok(Some(self.load_file(&config_path).await?));
             }
@@ -173,7 +173,7 @@ impl CliConfigLoader {
     /// Try loading from XDG config directory
     async fn try_load_xdg(&self) -> Result<Option<RawConfig>> {
         if let Some(config_dir) = self.get_xdg_config_dir() {
-            let config_path = config_dir.join("lode").join("config.json");
+            let config_path = config_dir.join("coro").join("config.json");
             if config_path.exists() {
                 return Ok(Some(self.load_file(&config_path).await?));
             }
@@ -199,8 +199,8 @@ impl CliConfigLoader {
         .flatten()
         .collect();
 
-        // Check if we have a protocol override or LODE_PROTOCOL env var
-        let env_protocol = std::env::var("LODE_PROTOCOL").ok();
+        // Check if we have a protocol override or CORO_PROTOCOL env var
+        let env_protocol = std::env::var("CORO_PROTOCOL").ok();
         let protocol_preference = self.protocol_override.as_ref().or(env_protocol.as_ref());
 
         let protocol = if let Some(preferred_protocol) = protocol_preference {
@@ -219,10 +219,10 @@ impl CliConfigLoader {
         } else {
             // No protocol preference, use auto-detection logic
             match available_keys.len() {
-                0 => return Err(anyhow!("No configuration found. Please create a lode.json file or set environment variables like OPENAI_API_KEY")),
+                0 => return Err(anyhow!("No configuration found. Please create a coro.json file or set environment variables like OPENAI_API_KEY")),
                 1 => available_keys[0],
                 _ => return Err(anyhow!(
-                    "Multiple API keys detected: {}. Please specify which protocol to use with LODE_PROTOCOL or --protocol",
+                    "Multiple API keys detected: {}. Please specify which protocol to use with CORO_PROTOCOL or --protocol",
                     available_keys.join(", ")
                 )),
             }
@@ -240,7 +240,7 @@ impl CliConfigLoader {
             protocol: protocol.to_string(),
             api_key,
             base_url: None, // Will use protocol default
-            model: std::env::var("LODE_MODEL").unwrap_or_else(|_| default_model.to_string()),
+            model: std::env::var("CORO_MODEL").unwrap_or_else(|_| default_model.to_string()),
             params: ModelParams::default(),
             headers: HashMap::new(),
         })

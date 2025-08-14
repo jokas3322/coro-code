@@ -36,11 +36,11 @@ pub async fn test_command() -> Result<()> {
 }
 
 async fn test_config() -> Result<()> {
-    use lode_core::ResolvedLlmConfig;
+    use coro_core::ResolvedLlmConfig;
 
     // Test creating a basic LLM configuration
-    let llm_config = lode_core::ResolvedLlmConfig::new(
-        lode_core::Protocol::OpenAICompat,
+    let llm_config = coro_core::ResolvedLlmConfig::new(
+        coro_core::Protocol::OpenAICompat,
         "https://api.openai.com/v1".to_string(),
         "test-key".to_string(),
         "gpt-4o".to_string(),
@@ -57,7 +57,7 @@ async fn test_config() -> Result<()> {
 }
 
 async fn test_tools() -> Result<()> {
-    use lode_core::tools::ToolRegistry;
+    use coro_core::tools::ToolRegistry;
 
     let registry = ToolRegistry::default();
     let tools = registry.list_tools();
@@ -73,7 +73,7 @@ async fn test_tools() -> Result<()> {
 
 async fn test_llm() -> Result<()> {
     // Just test that we can create the types
-    use lode_core::llm::{LlmMessage, MessageRole};
+    use coro_core::llm::{LlmMessage, MessageRole};
 
     let message = LlmMessage::system("Test system message");
 

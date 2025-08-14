@@ -1,6 +1,6 @@
 //! Interactive mode state management
 
-use lode_core::ResolvedLlmConfig;
+use coro_core::ResolvedLlmConfig;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

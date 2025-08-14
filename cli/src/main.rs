@@ -1,6 +1,6 @@
-//! # Lode CLI
+//! # coro CLI
 //!
-//! Command-line interface for Lode - a high-performance AI coding agent.
+//! Command-line interface for coro-code - a high-performance AI coding agent.
 //!
 //! This CLI provides both single-shot task execution and interactive modes,
 //! with a beautiful terminal UI powered by iocraft.
@@ -20,9 +20,9 @@ mod ui;
 use commands::{interactive_command, run_command, test_command, tools_command};
 use config::CliConfigLoader;
 
-/// Lode - A high-performance AI coding agent
+/// coro - A high-performance AI coding agent
 #[derive(Parser)]
-#[command(name = "lode")]
+#[command(name = "coro")]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(about = "A high-performance AI coding agent written in Rust")]
 #[command(long_about = None)]

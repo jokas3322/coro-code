@@ -6,7 +6,7 @@
 use crate::interactive::message_handler::AppMessage;
 use crate::output::interactive_handler::{InteractiveMessage, InteractiveOutputConfig};
 use anyhow::Result;
-use lode_core::ResolvedLlmConfig;
+use coro_core::ResolvedLlmConfig;
 use std::path::PathBuf;
 use tokio::sync::{broadcast, mpsc};
 
@@ -33,27 +33,27 @@ impl TokenTrackingOutputHandler {
 }
 
 #[async_trait::async_trait]
-impl lode_core::output::AgentOutput for TokenTrackingOutputHandler {
+impl coro_core::output::AgentOutput for TokenTrackingOutputHandler {
     async fn emit_event(
         &self,
-        event: lode_core::output::AgentEvent,
+        event: coro_core::output::AgentEvent,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Check for token updates and status updates in various events
         match &event {
-            lode_core::output::AgentEvent::ExecutionCompleted { context, .. } => {
+            coro_core::output::AgentEvent::ExecutionCompleted { context, .. } => {
                 if context.token_usage.total_tokens > 0 {
                     let _ = self.ui_sender.send(AppMessage::TokenUpdate {
                         tokens: context.token_usage.total_tokens,
                     });
                 }
             }
-            lode_core::output::AgentEvent::TokenUsageUpdated { token_usage } => {
+            coro_core::output::AgentEvent::TokenUsageUpdated { token_usage } => {
                 // Send immediate token update for smooth animation
                 let _ = self.ui_sender.send(AppMessage::TokenUpdate {
                     tokens: token_usage.total_tokens,
                 });
             }
-            lode_core::output::AgentEvent::StatusUpdate { status, .. } => {
+            coro_core::output::AgentEvent::StatusUpdate { status, .. } => {
                 // Send status update to UI
                 let _ = self.ui_sender.send(AppMessage::AgentTaskStarted {
                     operation: status.clone(),
@@ -85,10 +85,10 @@ pub async fn execute_agent_task(
     // Create a receiver to listen for interruption signals
     let mut interrupt_receiver = ui_sender.subscribe();
     use crate::tools::StatusReportToolFactory;
-    use lode_core::tools::ToolRegistry;
+    use coro_core::tools::ToolRegistry;
 
     // Create agent configuration with status_report tool for interactive mode
-    let mut agent_config = lode_core::AgentConfig::default();
+    let mut agent_config = coro_core::AgentConfig::default();
     if !agent_config.tools.contains(&"status_report".to_string()) {
         agent_config.tools.push("status_report".to_string());
     }
@@ -122,7 +122,7 @@ pub async fn execute_agent_task(
     )));
 
     // Create and execute agent task
-    let mut agent = lode_core::agent::AgentCore::new_with_output_and_registry(
+    let mut agent = coro_core::agent::AgentCore::new_with_output_and_registry(
         agent_config,
         llm_config,
         token_tracking_output,
@@ -171,7 +171,7 @@ pub async fn execute_agent_task(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lode_core::output::AgentOutput;
+    use coro_core::output::AgentOutput;
     use tokio::sync::broadcast;
 
     #[test]
