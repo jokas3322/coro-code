@@ -2,6 +2,13 @@
 //!
 //! Command-line interface for coro-code - a high-performance AI coding agent.
 //!
+//! ## Usage
+//!
+//! - `coro` - Start interactive mode
+//! - `coro "task description"` - Execute a single task
+//! - `coro tools` - Show available tools
+//! - `coro test` - Run basic tests
+//!
 //! This CLI provides both single-shot task execution and interactive modes,
 //! with a beautiful terminal UI powered by iocraft.
 
@@ -59,45 +66,31 @@ struct Cli {
     #[arg(long)]
     working_dir: Option<PathBuf>,
 
+    /// Maximum number of steps (for run mode)
+    #[arg(long)]
+    max_steps: Option<usize>,
+
+    /// Output trajectory file
+    #[arg(long)]
+    trajectory_file: Option<PathBuf>,
+
+    /// Must create a patch file (for run mode)
+    #[arg(long)]
+    must_patch: bool,
+
+    /// Patch output file (for run mode)
+    #[arg(long, default_value = "changes.patch")]
+    patch_path: PathBuf,
+
+    /// The task to execute (if provided, runs in single-task mode)
+    task: Option<String>,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Run a single task
-    Run {
-        /// The task to execute
-        task: String,
-
-        /// Maximum number of steps
-        #[arg(long)]
-        max_steps: Option<usize>,
-
-        /// Output trajectory file
-        #[arg(long)]
-        trajectory_file: Option<PathBuf>,
-
-        /// Must create a patch file
-        #[arg(long)]
-        must_patch: bool,
-
-        /// Patch output file
-        #[arg(long, default_value = "changes.patch")]
-        patch_path: PathBuf,
-    },
-
-    /// Start interactive mode
-    Interactive {
-        /// Output trajectory file
-        #[arg(long)]
-        trajectory_file: Option<PathBuf>,
-
-        /// Enable debug output mode
-        #[arg(short = 'd', long = "debug")]
-        debug_output: bool,
-    },
-
     /// Show available tools
     Tools,
 
@@ -158,35 +151,32 @@ async fn main() -> Result<()> {
     // Build configuration loader
     let config_loader = build_config_loader(&cli);
 
-    match cli.command {
-        Some(Commands::Run {
-            task,
-            max_steps,
-            trajectory_file,
-            must_patch,
-            patch_path,
-        }) => {
+    match (cli.task, cli.command) {
+        // If task is provided, run in single-task mode
+        (Some(task), None) => {
             run_command(
                 task,
                 config_loader,
-                max_steps,
-                trajectory_file,
-                must_patch,
-                patch_path,
+                cli.max_steps,
+                cli.trajectory_file,
+                cli.must_patch,
+                cli.patch_path,
                 cli.working_dir,
                 cli.debug_output,
             )
             .await
         }
-        Some(Commands::Interactive {
-            trajectory_file,
-            debug_output,
-        }) => interactive_command(config_loader, trajectory_file, debug_output).await,
-        Some(Commands::Tools) => tools_command().await,
-        Some(Commands::Test) => test_command().await,
-        None => {
-            // Default to interactive mode
-            interactive_command(config_loader, None, cli.debug_output).await
+        // If task is provided with a subcommand, that's an error
+        (Some(_), Some(_)) => {
+            eprintln!("Error: Cannot specify both a task and a subcommand");
+            std::process::exit(1);
+        }
+        // Handle subcommands
+        (None, Some(Commands::Tools)) => tools_command().await,
+        (None, Some(Commands::Test)) => test_command().await,
+        // Default to interactive mode
+        (None, None) => {
+            interactive_command(config_loader, cli.trajectory_file, cli.debug_output).await
         }
     }
 }

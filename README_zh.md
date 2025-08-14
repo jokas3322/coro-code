@@ -42,13 +42,10 @@ cargo install --git https://github.com/Blushyes/coro-code --bin coro
 
 ```bash
 # 交互模式（推荐）
-coro interactive
-
-# 或直接
 coro
 
 # 单次任务
-coro run "Fix the bug in main.rs"
+coro "Fix the bug in main.rs"
 ```
 
 ## ⚙️ 最简配置

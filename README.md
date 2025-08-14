@@ -43,13 +43,10 @@ cargo install --git https://github.com/Blushyes/coro-code --bin coro
 
 ```bash
 # Interactive mode (recommended)
-coro interactive
-
-# Or simply
 coro
 
 # Single task
-coro run "Fix the bug in main.rs"
+coro "Fix the bug in main.rs"
 ```
 
 ### Configuration
@@ -88,7 +85,7 @@ Create a `coro.json` file:
 
 ```bash
 # Interactive mode
-coro interactive
+coro
 
 # Direct command
 coro "Help me refactor this function"
