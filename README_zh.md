@@ -67,6 +67,7 @@ export OPENAI_MODEL="gpt-4o"
 
 ```json
 {
+  "protocol": "openai",
   "base_url": "https://api.deepseek.com",
   "api_key": "your-api-key",
   "model": "deepseek-chat",

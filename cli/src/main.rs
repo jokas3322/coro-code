@@ -31,7 +31,7 @@ struct Cli {
     #[arg(short, long)]
     config: Option<PathBuf>,
 
-    /// Protocol to use (openai_compat, anthropic, google_ai, azure_openai)
+    /// Protocol to use (openai, anthropic, google_ai, azure_openai)
     #[arg(long)]
     protocol: Option<String>,
 

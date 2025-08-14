@@ -190,7 +190,7 @@ impl CliConfigLoader {
         let azure_key = std::env::var("AZURE_OPENAI_API_KEY").ok();
 
         let available_keys: Vec<_> = [
-            openai_key.as_ref().map(|_| "openai_compat"),
+            openai_key.as_ref().map(|_| "openai"),
             anthropic_key.as_ref().map(|_| "anthropic"),
             google_key.as_ref().map(|_| "google_ai"),
             azure_key.as_ref().map(|_| "azure_openai"),
@@ -206,7 +206,7 @@ impl CliConfigLoader {
         let protocol = if let Some(preferred_protocol) = protocol_preference {
             // Use the specified protocol if we have the corresponding API key
             match preferred_protocol.as_str() {
-                "openai_compat" if openai_key.is_some() => "openai_compat",
+                "openai" if openai_key.is_some() => "openai",
                 "anthropic" if anthropic_key.is_some() => "anthropic",
                 "google_ai" if google_key.is_some() => "google_ai",
                 "azure_openai" if azure_key.is_some() => "azure_openai",
@@ -229,7 +229,7 @@ impl CliConfigLoader {
         };
 
         let (api_key, default_model) = match protocol {
-            "openai_compat" => (openai_key.unwrap(), "gpt-4o"),
+            "openai" => (openai_key.unwrap(), "gpt-4o"),
             "anthropic" => (anthropic_key.unwrap(), "claude-3-5-sonnet-20241022"),
             "google_ai" => (google_key.unwrap(), "gemini-pro"),
             "azure_openai" => (azure_key.unwrap(), "gpt-4"),
@@ -310,7 +310,7 @@ impl CliConfigLoader {
     async fn resolve_config(&self, config: RawConfig) -> Result<ResolvedLlmConfig> {
         // Parse protocol
         let protocol = match config.protocol.as_str() {
-            "openai_compat" => Protocol::OpenAICompat,
+            "openai" => Protocol::OpenAICompat,
             "anthropic" => Protocol::Anthropic,
             "google_ai" => Protocol::GoogleAI,
             "azure_openai" => Protocol::AzureOpenAI,

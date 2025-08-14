@@ -10,7 +10,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Protocol {
     /// OpenAI-compatible API (includes OpenAI, many proxies, local models)
-    #[serde(rename = "openai_compat")]
+    #[serde(rename = "openai")]
     OpenAICompat,
     /// Anthropic Claude API
     #[serde(rename = "anthropic")]
@@ -30,7 +30,7 @@ impl Protocol {
     /// Get the protocol name as a string
     pub fn as_str(&self) -> &str {
         match self {
-            Protocol::OpenAICompat => "openai_compat",
+            Protocol::OpenAICompat => "openai",
             Protocol::Anthropic => "anthropic",
             Protocol::GoogleAI => "google_ai",
             Protocol::AzureOpenAI => "azure_openai",
