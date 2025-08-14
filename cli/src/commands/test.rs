@@ -36,25 +36,22 @@ pub async fn test_command() -> Result<()> {
 }
 
 async fn test_config() -> Result<()> {
-    use lode_core::Config;
+    use lode_core::ResolvedLlmConfig;
 
-    // Test default configuration
-    let config = Config::default();
+    // Test creating a basic LLM configuration
+    let llm_config = lode_core::ResolvedLlmConfig::new(
+        lode_core::Protocol::OpenAICompat,
+        "https://api.openai.com/v1".to_string(),
+        "test-key".to_string(),
+        "gpt-4o".to_string(),
+    );
 
-    // Verify we have at least one agent
-    if config.agents.is_empty() {
-        return Err(anyhow::anyhow!("No agents in default config"));
-    }
+    // Verify configuration is valid
+    llm_config
+        .validate()
+        .map_err(|e| anyhow::anyhow!("Config validation failed: {}", e))?;
 
-    // Verify we have at least one model
-    if config.models.is_empty() {
-        return Err(anyhow::anyhow!("No models in default config"));
-    }
-
-    // Verify we have at least one provider
-    if config.model_providers.is_empty() {
-        return Err(anyhow::anyhow!("No providers in default config"));
-    }
+    println!("✅ Configuration test passed");
 
     Ok(())
 }

@@ -23,7 +23,12 @@ impl Default for MainPageProps {
                 ui_anim: crate::interactive::animation::UiAnimationConfig::default(),
             },
             input_context: InputSectionContext {
-                config: lode_core::Config::default(),
+                llm_config: lode_core::ResolvedLlmConfig::new(
+                    lode_core::Protocol::OpenAICompat,
+                    "https://api.openai.com/v1".to_string(),
+                    "test-key".to_string(),
+                    "gpt-4o".to_string(),
+                ),
                 project_path: std::path::PathBuf::from("."),
                 ui_sender: tokio::sync::broadcast::channel(1).0,
             },

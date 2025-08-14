@@ -1,38 +1,23 @@
 //! OpenAI client implementation using async-openai library
 
-use crate::config::{ ModelConfig, ProviderConfig };
-use crate::error::{ LlmError, Result };
+use crate::config::ResolvedLlmConfig;
+use crate::error::{LlmError, Result};
 use crate::llm::{
-    ChatOptions,
-    FinishReason,
-    LlmClient,
-    LlmMessage,
-    LlmResponse,
-    LlmStreamChunk,
-    ToolDefinition,
-    Usage,
-    MessageRole,
-    MessageContent,
-    ContentBlock,
+    ChatOptions, ContentBlock, FinishReason, LlmClient, LlmMessage, LlmResponse, LlmStreamChunk,
+    MessageContent, MessageRole, ToolDefinition, Usage,
 };
 use crate::tools::ToolCall;
 use async_openai::{
-    Client,
     config::OpenAIConfig,
     types::{
-        CreateChatCompletionRequestArgs,
-        ChatCompletionRequestMessage,
-        ChatCompletionRequestSystemMessage,
-        ChatCompletionRequestUserMessage,
-        ChatCompletionRequestAssistantMessage,
-        ChatCompletionRequestAssistantMessageContent,
-        ChatCompletionRequestToolMessage,
-        ChatCompletionRequestToolMessageContent,
-        ChatCompletionTool,
-        ChatCompletionToolType,
+        ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessage,
+        ChatCompletionRequestAssistantMessageContent, ChatCompletionRequestMessage,
+        ChatCompletionRequestSystemMessage, ChatCompletionRequestToolMessage,
+        ChatCompletionRequestToolMessageContent, ChatCompletionRequestUserMessage,
+        ChatCompletionTool, ChatCompletionToolType, CreateChatCompletionRequestArgs,
         FunctionObject,
-        ChatCompletionMessageToolCall,
     },
+    Client,
 };
 use async_trait::async_trait;
 use futures::StreamExt;
@@ -42,41 +27,42 @@ use serde_json::Value;
 pub struct OpenAiClient {
     client: Client<OpenAIConfig>,
     model: String,
-    model_config: ModelConfig,
     // Store base URL to determine streaming compatibility at runtime
     base_url: String,
+    headers: std::collections::HashMap<String, String>,
 }
 
 impl OpenAiClient {
-    /// Create a new OpenAI client
-    pub fn new(provider_config: &ProviderConfig, model_config: &ModelConfig) -> Result<Self> {
-        let api_key = provider_config.get_api_key().ok_or_else(|| LlmError::Authentication {
-            message: "No API key found for OpenAI".to_string(),
-        })?;
-
-        let mut config = OpenAIConfig::new().with_api_key(api_key);
-
-        // Set custom base URL if provided
-        let base_url = provider_config.get_base_url();
-        if base_url != "https://api.openai.com" {
-            // Use a reference to avoid moving base_url so we can store it on self
-            config = config.with_api_base(&base_url);
+    /// Create a new OpenAI client from resolved LLM config
+    pub fn new(config: &ResolvedLlmConfig) -> Result<Self> {
+        if config.api_key.is_empty() {
+            return Err(crate::error::Error::Llm(LlmError::Authentication {
+                message: "No API key found for OpenAI".to_string(),
+            }));
         }
 
-        let client = Client::with_config(config);
+        let mut openai_config = OpenAIConfig::new().with_api_key(&config.api_key);
+
+        // Set custom base URL if provided
+        let base_url = &config.base_url;
+        if base_url != "https://api.openai.com" {
+            openai_config = openai_config.with_api_base(base_url);
+        }
+
+        let client = Client::with_config(openai_config);
 
         Ok(Self {
             client,
-            model: model_config.model.clone(),
-            model_config: model_config.clone(),
-            base_url,
+            model: config.model.clone(),
+            base_url: base_url.clone(),
+            headers: config.headers.clone(),
         })
     }
 
     /// Convert our internal message format to async-openai format
     fn convert_messages(
         &self,
-        messages: Vec<LlmMessage>
+        messages: Vec<LlmMessage>,
     ) -> Result<Vec<ChatCompletionRequestMessage>> {
         let mut converted = Vec::new();
 
@@ -149,11 +135,9 @@ impl OpenAiClient {
                                     content: if content.is_empty() {
                                         None
                                     } else {
-                                        Some(
-                                            ChatCompletionRequestAssistantMessageContent::Text(
-                                                content,
-                                            ),
-                                        )
+                                        Some(ChatCompletionRequestAssistantMessageContent::Text(
+                                            content,
+                                        ))
                                     },
                                     name: None,
                                     tool_calls: if tool_calls.is_empty() {
@@ -174,7 +158,12 @@ impl OpenAiClient {
                     let mut pushed_any = false;
                     if let MessageContent::MultiModal(blocks) = &message.content {
                         for block in blocks {
-                            if let ContentBlock::ToolResult { tool_use_id, content, .. } = block {
+                            if let ContentBlock::ToolResult {
+                                tool_use_id,
+                                content,
+                                ..
+                            } = block
+                            {
                                 converted.push(ChatCompletionRequestMessage::Tool(
                                     ChatCompletionRequestToolMessage {
                                         content: ChatCompletionRequestToolMessageContent::Text(
@@ -188,12 +177,10 @@ impl OpenAiClient {
                         }
                     }
                     if !pushed_any {
-                        return Err(
-                            (LlmError::InvalidRequest {
-                                message: "Tool message must contain ToolResult".to_string(),
-                            })
-                                .into(),
-                        );
+                        return Err((LlmError::InvalidRequest {
+                            message: "Tool message must contain ToolResult".to_string(),
+                        })
+                        .into());
                     }
                 }
             }
@@ -222,16 +209,14 @@ impl OpenAiClient {
     fn convert_tools(&self, tools: Vec<ToolDefinition>) -> Vec<ChatCompletionTool> {
         tools
             .into_iter()
-            .map(|tool| {
-                ChatCompletionTool {
-                    r#type: ChatCompletionToolType::Function,
-                    function: FunctionObject {
-                        name: tool.function.name,
-                        description: Some(tool.function.description),
-                        parameters: Some(tool.function.parameters),
-                        strict: None,
-                    },
-                }
+            .map(|tool| ChatCompletionTool {
+                r#type: ChatCompletionToolType::Function,
+                function: FunctionObject {
+                    name: tool.function.name,
+                    description: Some(tool.function.description),
+                    parameters: Some(tool.function.parameters),
+                    strict: None,
+                },
             })
             .collect()
     }
@@ -243,7 +228,7 @@ impl LlmClient for OpenAiClient {
         &self,
         messages: Vec<LlmMessage>,
         tools: Option<Vec<ToolDefinition>>,
-        options: Option<ChatOptions>
+        options: Option<ChatOptions>,
     ) -> Result<LlmResponse> {
         let converted_messages = self.convert_messages(messages)?;
         let converted_tools = tools.map(|t| self.convert_tools(t));
@@ -280,16 +265,13 @@ impl LlmClient for OpenAiClient {
             }
         })?;
 
-        let response = self.client
-            .chat()
-            .create(request).await
-            .map_err(|e| {
-                tracing::error!("OpenAI API call failed: {}", e);
-                LlmError::ApiError {
-                    status: 500, // async-openai doesn't expose status codes directly
-                    message: e.to_string(),
-                }
-            })?;
+        let response = self.client.chat().create(request).await.map_err(|e| {
+            tracing::error!("OpenAI API call failed: {}", e);
+            LlmError::ApiError {
+                status: 500, // async-openai doesn't expose status codes directly
+                message: e.to_string(),
+            }
+        })?;
 
         let result = self.convert_response(response);
         match &result {
@@ -297,9 +279,15 @@ impl LlmClient for OpenAiClient {
                 // Log tool usage in response - critical for debugging tool calls
                 match &response.message.content {
                     MessageContent::MultiModal(blocks) => {
-                        let tool_use_count = blocks.iter().filter(|block| matches!(block, ContentBlock::ToolUse { .. })).count();
+                        let tool_use_count = blocks
+                            .iter()
+                            .filter(|block| matches!(block, ContentBlock::ToolUse { .. }))
+                            .count();
                         if tool_use_count > 0 {
-                            tracing::debug!("OpenAI response contains {} tool calls", tool_use_count);
+                            tracing::debug!(
+                                "OpenAI response contains {} tool calls",
+                                tool_use_count
+                            );
                             // Log tool call details
                             for block in blocks {
                                 if let ContentBlock::ToolUse { id, name, .. } = block {
@@ -341,7 +329,7 @@ impl LlmClient for OpenAiClient {
         &self,
         messages: Vec<LlmMessage>,
         tools: Option<Vec<ToolDefinition>>,
-        options: Option<ChatOptions>
+        options: Option<ChatOptions>,
     ) -> Result<Box<dyn futures::Stream<Item = Result<LlmStreamChunk>> + Send + Unpin + '_>> {
         let converted_messages = self.convert_messages(messages)?;
         let converted_tools: Option<Vec<ChatCompletionTool>> = tools.map(|t| self.convert_tools(t));
@@ -367,29 +355,29 @@ impl LlmClient for OpenAiClient {
             }
         }
 
-        let request = request_builder.build().map_err(|e| LlmError::InvalidRequest {
-            message: format!("Failed to build request: {}", e),
-        })?;
+        let request = request_builder
+            .build()
+            .map_err(|e| LlmError::InvalidRequest {
+                message: format!("Failed to build request: {}", e),
+            })?;
 
-        let stream = self.client
+        let stream = self
+            .client
             .chat()
-            .create_stream(request).await
+            .create_stream(request)
+            .await
             .map_err(|e| LlmError::ApiError {
                 status: 500,
                 message: e.to_string(),
             })?;
 
-        let converted_stream = stream.map(|result| {
-            match result {
-                Ok(chunk) => self.convert_stream_chunk(chunk),
-                Err(e) =>
-                    Err(
-                        (LlmError::ApiError {
-                            status: 500,
-                            message: e.to_string(),
-                        }).into()
-                    ),
-            }
+        let converted_stream = stream.map(|result| match result {
+            Ok(chunk) => self.convert_stream_chunk(chunk),
+            Err(e) => Err((LlmError::ApiError {
+                status: 500,
+                message: e.to_string(),
+            })
+            .into()),
         });
 
         Ok(Box::new(Box::pin(converted_stream)))
@@ -400,14 +388,16 @@ impl OpenAiClient {
     /// Convert async-openai response to our internal format
     fn convert_response(
         &self,
-        response: async_openai::types::CreateChatCompletionResponse
+        response: async_openai::types::CreateChatCompletionResponse,
     ) -> Result<LlmResponse> {
-        let choice = response.choices
-            .into_iter()
-            .next()
-            .ok_or_else(|| LlmError::InvalidRequest {
-                message: "No choices in response".to_string(),
-            })?;
+        let choice =
+            response
+                .choices
+                .into_iter()
+                .next()
+                .ok_or_else(|| LlmError::InvalidRequest {
+                    message: "No choices in response".to_string(),
+                })?;
 
         let message_content = if let Some(content) = choice.message.content {
             if let Some(tool_calls) = choice.message.tool_calls {
@@ -416,8 +406,7 @@ impl OpenAiClient {
 
                 for tool_call in tool_calls {
                     let function = &tool_call.function;
-                    let args: Value = serde_json
-                        ::from_str(&function.arguments)
+                    let args: Value = serde_json::from_str(&function.arguments)
                         .unwrap_or_else(|_| Value::String(function.arguments.clone()));
 
                     blocks.push(ContentBlock::ToolUse {
@@ -437,8 +426,7 @@ impl OpenAiClient {
 
             for tool_call in tool_calls {
                 let function = &tool_call.function;
-                let args: Value = serde_json
-                    ::from_str(&function.arguments)
+                let args: Value = serde_json::from_str(&function.arguments)
                     .unwrap_or_else(|_| Value::String(function.arguments.clone()));
 
                 blocks.push(ContentBlock::ToolUse {
@@ -465,14 +453,12 @@ impl OpenAiClient {
             total_tokens: u.total_tokens,
         });
 
-        let finish_reason = choice.finish_reason.map(|reason| {
-            match reason {
-                async_openai::types::FinishReason::Stop => FinishReason::Stop,
-                async_openai::types::FinishReason::Length => FinishReason::Length,
-                async_openai::types::FinishReason::ToolCalls => FinishReason::ToolCalls,
-                async_openai::types::FinishReason::ContentFilter => FinishReason::ContentFilter,
-                async_openai::types::FinishReason::FunctionCall => FinishReason::ToolCalls,
-            }
+        let finish_reason = choice.finish_reason.map(|reason| match reason {
+            async_openai::types::FinishReason::Stop => FinishReason::Stop,
+            async_openai::types::FinishReason::Length => FinishReason::Length,
+            async_openai::types::FinishReason::ToolCalls => FinishReason::ToolCalls,
+            async_openai::types::FinishReason::ContentFilter => FinishReason::ContentFilter,
+            async_openai::types::FinishReason::FunctionCall => FinishReason::ToolCalls,
         });
 
         Ok(LlmResponse {
@@ -487,7 +473,7 @@ impl OpenAiClient {
     /// Convert async-openai stream chunk to our internal format
     fn convert_stream_chunk(
         &self,
-        chunk: async_openai::types::CreateChatCompletionStreamResponse
+        chunk: async_openai::types::CreateChatCompletionStreamResponse,
     ) -> Result<LlmStreamChunk> {
         let choice = chunk.choices.into_iter().next();
 
@@ -503,12 +489,14 @@ impl OpenAiClient {
                             // For streaming, we need to handle partial tool calls
                             // Don't try to parse JSON here, just pass the raw data
                             let id = tool_call.id.as_deref().unwrap_or("").to_string();
-                            let name = tool_call.function
+                            let name = tool_call
+                                .function
                                 .as_ref()
                                 .and_then(|f| f.name.as_deref())
                                 .unwrap_or("")
                                 .to_string();
-                            let arguments = tool_call.function
+                            let arguments = tool_call
+                                .function
                                 .as_ref()
                                 .and_then(|f| f.arguments.as_deref())
                                 .unwrap_or("")
@@ -527,17 +515,15 @@ impl OpenAiClient {
             })
             .filter(|calls| !calls.is_empty());
 
-        let finish_reason = choice.and_then(|c|
-            c.finish_reason.map(|reason| {
-                match reason {
-                    async_openai::types::FinishReason::Stop => FinishReason::Stop,
-                    async_openai::types::FinishReason::Length => FinishReason::Length,
-                    async_openai::types::FinishReason::ToolCalls => FinishReason::ToolCalls,
-                    async_openai::types::FinishReason::ContentFilter => FinishReason::ContentFilter,
-                    async_openai::types::FinishReason::FunctionCall => FinishReason::ToolCalls,
-                }
+        let finish_reason = choice.and_then(|c| {
+            c.finish_reason.map(|reason| match reason {
+                async_openai::types::FinishReason::Stop => FinishReason::Stop,
+                async_openai::types::FinishReason::Length => FinishReason::Length,
+                async_openai::types::FinishReason::ToolCalls => FinishReason::ToolCalls,
+                async_openai::types::FinishReason::ContentFilter => FinishReason::ContentFilter,
+                async_openai::types::FinishReason::FunctionCall => FinishReason::ToolCalls,
             })
-        );
+        });
 
         let usage = chunk.usage.map(|u| Usage {
             prompt_tokens: u.prompt_tokens,

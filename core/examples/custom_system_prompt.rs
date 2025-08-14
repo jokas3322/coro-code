@@ -6,9 +6,8 @@
 //! 3. Dynamically at runtime
 
 use lode_core::{
-    agent::AgentCore,
-    config::{agent_config::OutputMode, AgentConfig, Config},
-    output::events::NullOutput,
+    agent::AgentCore, output::events::NullOutput, AgentConfig, OutputMode, Protocol,
+    ResolvedLlmConfig,
 };
 
 #[tokio::main]
@@ -25,10 +24,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .to_string(),
     );
 
-    let config = Config::default();
+    // Create LLM configuration
+    let llm_config = ResolvedLlmConfig::new(
+        Protocol::OpenAICompat,
+        "https://api.openai.com/v1".to_string(),
+        "test-key".to_string(),
+        "gpt-4o".to_string(),
+    );
 
     // Create agent with custom system prompt
-    let mut agent = AgentCore::new_with_output(agent_config, config, Box::new(NullOutput)).await?;
+    let mut agent =
+        AgentCore::new_with_llm_config(agent_config, llm_config, Box::new(NullOutput)).await?;
 
     // Verify the system prompt is set
     if let Some(prompt) = agent.get_configured_system_prompt() {
@@ -72,7 +78,6 @@ system_prompt = "You are a helpful coding assistant specialized in web developme
 
     println!("\n=== JSON Configuration Example ===");
     let example_config = AgentConfig {
-        model: "claude-3-5-sonnet-20241022".to_string(),
         max_steps: 100,
         enable_lakeview: true,
         tools: vec![

@@ -7,62 +7,32 @@ use tracing::{debug, info};
 /// Execute a single task
 pub async fn run_command(
     task: String,
-    config_dir: PathBuf,
-    provider: Option<String>,
-    model: Option<String>,
-    _api_key: Option<String>,
+    config_loader: crate::config::CliConfigLoader,
     max_steps: Option<usize>,
     trajectory_file: Option<PathBuf>,
     must_patch: bool,
     patch_path: PathBuf,
     working_dir: Option<PathBuf>,
-    _debug_output: bool,
+    debug_output: bool,
 ) -> Result<()> {
     info!("Executing task: {}", task);
 
     use crate::output::cli_handler::{CliOutputConfig, CliOutputHandler};
-    use lode_core::{agent::AgentCore, trajectory::TrajectoryRecorder, Config};
+    use lode_core::{trajectory::TrajectoryRecorder, AgentBuilder, AgentConfig, OutputMode};
 
-    // Output is now handled by the CLI output handler
+    // Load LLM configuration
+    let llm_config = config_loader.load().await?;
+    info!("🤖 Using protocol: {}", llm_config.protocol.as_str());
+    info!("🤖 Using model: {}", llm_config.model);
 
-    // Load configuration using API-based system
-    let _config = match Config::from_api_configs(&config_dir).await {
-        Ok(config) => {
-            debug!(
-                "📋 Loaded API-based configuration from: {}",
-                config_dir.display()
-            );
-            config
-        }
-        Err(e) => {
-            debug!(
-                "⚠️  Failed to load configuration from {}: {}",
-                config_dir.display(),
-                e
-            );
-            debug!("📋 Using default configuration");
-            Config::default()
-        }
-    };
-
-    // Override provider and model if specified
-    if let Some(provider) = &provider {
-        info!("🤖 Provider: {}", provider);
+    // Create agent configuration
+    let mut agent_config = AgentConfig::default();
+    if let Some(steps) = max_steps {
+        agent_config.max_steps = steps;
     }
-
-    if let Some(model) = &model {
-        info!("🧠 Model: {}", model);
+    if debug_output {
+        agent_config.output_mode = OutputMode::Debug;
     }
-
-    let max_steps = max_steps.unwrap_or(200);
-    debug!("🔢 Max steps: {}", max_steps);
-
-    // Initialize agent with proper configuration
-    let agent_config = _config
-        .agents
-        .get("lode_agent")
-        .cloned()
-        .unwrap_or_default();
 
     // Create CLI output handler
     let cli_config = CliOutputConfig {
@@ -70,14 +40,17 @@ pub async fn run_command(
     };
     let cli_output = Box::new(CliOutputHandler::new(cli_config));
 
-    let mut agent =
-        AgentCore::new_with_output(agent_config.clone(), _config.clone(), cli_output).await?;
+    // Build agent with new configuration system
+    let agent = AgentBuilder::new(llm_config)
+        .with_agent_config(agent_config)
+        .build_with_output(cli_output)
+        .await?;
 
     // Initialize trajectory recorder
     let trajectory = TrajectoryRecorder::new();
     let task_entry = lode_core::trajectory::TrajectoryEntry::task_start(
         task.clone(),
-        serde_json::to_value(&agent_config).unwrap_or_default(),
+        serde_json::json!({"max_steps": max_steps.unwrap_or(200)}),
     );
     trajectory.record(task_entry).await?;
 
@@ -85,8 +58,7 @@ pub async fn run_command(
         info!("📊 Trajectory file: {}", trajectory_file.display());
     }
 
-    debug!("🤖 Using Trae Agent system prompt (consistent with Python version)");
-    debug!("📋 System prompt preview: TraeAgent system prompt loaded...");
+    debug!("🤖 Using Lode Agent system prompt");
 
     // Get current working directory
     let current_dir = working_dir
@@ -95,8 +67,8 @@ pub async fn run_command(
 
     debug!("📁 Project path: {}", project_path.display());
 
-    // Execute the task using the real agent
-
+    // Execute the task using the agent
+    let mut agent = agent; // Make mutable for execution
     let _execution_result = agent
         .execute_task_with_context(&task, &project_path)
         .await?;
@@ -114,7 +86,7 @@ pub async fn run_command(
         info!("📊 Trajectory saved to: {}", trajectory_file.display());
     }
 
-    // Task completion is now handled by the CLI output handler
+    info!("✅ Task completed successfully");
 
     Ok(())
 }

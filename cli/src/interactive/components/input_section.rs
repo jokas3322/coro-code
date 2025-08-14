@@ -12,7 +12,7 @@ use crate::interactive::file_search::{
 use crate::interactive::input_history::InputHistory;
 use crate::interactive::message_handler::AppMessage;
 use iocraft::prelude::*;
-use lode_core::Config;
+use lode_core::ResolvedLlmConfig;
 use std::cmp::min;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -91,7 +91,12 @@ impl Default for InputSectionProps {
     fn default() -> Self {
         Self {
             context: InputSectionContext {
-                config: Config::default(),
+                llm_config: ResolvedLlmConfig::new(
+                    lode_core::Protocol::OpenAICompat,
+                    "https://api.openai.com".to_string(),
+                    "test-key".to_string(),
+                    "gpt-4o".to_string(),
+                ),
                 project_path: PathBuf::new(),
                 ui_sender: tokio::sync::broadcast::channel(1).0,
             },
@@ -102,7 +107,7 @@ impl Default for InputSectionProps {
 /// Context for the input section component
 #[derive(Debug, Clone)]
 pub struct InputSectionContext {
-    pub config: Config,
+    pub llm_config: ResolvedLlmConfig,
     pub project_path: PathBuf,
     pub ui_sender: broadcast::Sender<AppMessage>,
 }
@@ -836,7 +841,7 @@ pub fn EnhancedTextInput(
 /// Spawn agent task execution and broadcast UI events
 pub fn spawn_ui_agent_task(
     input: String,
-    config: Config,
+    llm_config: ResolvedLlmConfig,
     project_path: PathBuf,
     ui_sender: broadcast::Sender<AppMessage>,
 ) {
@@ -868,7 +873,7 @@ pub fn spawn_ui_agent_task(
 
     // Execute agent task
     tokio::spawn(async move {
-        match execute_agent_task(input, config, project_path, ui_sender.clone()).await {
+        match execute_agent_task(input, llm_config, project_path, ui_sender.clone()).await {
             Ok(_) => {
                 let _ = cancel_sender.send(()); // Cancel the timer
                 let _ = ui_sender.send(AppMessage::AgentExecutionCompleted);
@@ -983,7 +988,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
         }
     });
 
-    let config = context.config.clone();
+    let llm_config = context.llm_config.clone();
     let project_path = context.project_path.clone();
     let ui_sender = context.ui_sender.clone();
 
@@ -1073,7 +1078,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
                     let mut cursor_position = cursor_position.clone();
                     let mut input_history = input_history.clone();
                     let ui_sender = ui_sender.clone();
-                    let config = config.clone();
+                    let llm_config = llm_config.clone();
                     let project_path = project_path.clone();
                     move |input: String| {
                         if input.trim().is_empty() {
@@ -1095,7 +1100,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
                         // Use enhanced task submission with file reference processing
                         crate::interactive::app::submit_task_with_file_processing(
                             input,
-                            config.clone(),
+                            llm_config.clone(),
                             project_path.clone(),
                             ui_sender.clone(),
                         );

@@ -10,7 +10,7 @@ use crate::interactive::router::{Route, UIRouter, UIRouterBuilder};
 use crate::interactive::terminal_output::{output_content_block, overwrite_previous_lines};
 use anyhow::Result;
 use iocraft::prelude::*;
-use lode_core::Config;
+use lode_core::ResolvedLlmConfig;
 use regex::Regex;
 use std::path::PathBuf;
 use tokio::sync::broadcast;
@@ -265,7 +265,7 @@ async fn process_input_with_file_references(
 /// Enhanced task submission with file reference processing
 pub fn submit_task_with_file_processing(
     input: String,
-    config: Config,
+    llm_config: ResolvedLlmConfig,
     project_path: PathBuf,
     ui_sender: broadcast::Sender<AppMessage>,
 ) {
@@ -274,7 +274,7 @@ pub fn submit_task_with_file_processing(
 
     // Process file references asynchronously and send combined message
     let ui_sender_clone = ui_sender.clone();
-    let config_clone = config.clone();
+    let llm_config_clone = llm_config.clone();
     let project_path_clone = project_path.clone();
 
     tokio::spawn(async move {
@@ -299,7 +299,7 @@ pub fn submit_task_with_file_processing(
                 // Use the existing spawn_ui_agent_task with enhanced input
                 spawn_ui_agent_task(
                     enhanced_input,
-                    config_clone,
+                    llm_config_clone,
                     project_path_clone,
                     ui_sender_clone,
                 );
@@ -318,7 +318,7 @@ pub fn submit_task_with_file_processing(
                 // Fall back to original input
                 spawn_ui_agent_task(
                     input_clone,
-                    config_clone,
+                    llm_config_clone,
                     project_path_clone,
                     ui_sender_clone,
                 );
@@ -330,7 +330,7 @@ pub fn submit_task_with_file_processing(
 /// Context for interactive mode - immutable application configuration
 #[derive(Debug, Clone)]
 struct AppContext {
-    config: Config,
+    llm_config: ResolvedLlmConfig,
     project_path: PathBuf,
     ui_sender: broadcast::Sender<AppMessage>,
     ui_anim: UiAnimationConfig,
@@ -338,14 +338,14 @@ struct AppContext {
 
 impl AppContext {
     fn new(
-        config: Config,
+        llm_config: ResolvedLlmConfig,
         project_path: PathBuf,
         ui_sender: broadcast::Sender<AppMessage>,
     ) -> Self {
         let ui_anim = UiAnimationConfig::from_env();
 
         Self {
-            config,
+            llm_config,
             project_path,
             ui_sender,
             ui_anim,
@@ -354,10 +354,13 @@ impl AppContext {
 }
 
 /// Interactive mode using iocraft
-pub async fn run_rich_interactive(config: Config, project_path: PathBuf) -> Result<()> {
+pub async fn run_rich_interactive(
+    llm_config: ResolvedLlmConfig,
+    project_path: PathBuf,
+) -> Result<()> {
     // Create UI broadcast channel and app context
     let (ui_sender, _ui_rx) = broadcast::channel::<AppMessage>(256);
-    let app_context = AppContext::new(config, project_path, ui_sender);
+    let app_context = AppContext::new(llm_config, project_path, ui_sender);
 
     // Run the iocraft-based UI with context provider in fullscreen mode
     tokio::task::spawn_blocking(move || {
@@ -528,7 +531,7 @@ fn TraeApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     };
 
     let input_context = InputSectionContext {
-        config: app_context.config.clone(),
+        llm_config: app_context.llm_config.clone(),
         project_path: app_context.project_path.clone(),
         ui_sender: app_context.ui_sender.clone(),
     };

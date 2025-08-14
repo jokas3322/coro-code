@@ -1,6 +1,6 @@
 //! Base agent trait and structures
 
-use crate::config::{AgentConfig, Config};
+use super::config::AgentConfig;
 use crate::error::Result;
 use crate::trajectory::TrajectoryRecorder;
 use async_trait::async_trait;
@@ -29,37 +29,6 @@ pub trait Agent: Send + Sync {
     fn trajectory_recorder(&self) -> Option<&TrajectoryRecorder>;
 }
 
-/// Factory for creating agents
-pub struct AgentFactory;
-
-impl AgentFactory {
-    /// Create an agent from configuration
-    pub async fn create_agent(
-        agent_type: &str,
-        config: &Config,
-        trajectory_recorder: Option<TrajectoryRecorder>,
-    ) -> Result<Box<dyn Agent>> {
-        match agent_type {
-            "lode_agent" => {
-                let agent_config = config.get_agent("lode_agent").ok_or_else(|| {
-                    crate::error::ConfigError::MissingField {
-                        field: "agents.lode_agent".to_string(),
-                    }
-                })?;
-
-                let mut agent =
-                    super::core::AgentCore::new(agent_config.clone(), config.clone()).await?;
-
-                if let Some(recorder) = trajectory_recorder {
-                    agent.set_trajectory_recorder(recorder);
-                }
-
-                Ok(Box::new(agent))
-            }
-            _ => Err(crate::error::AgentError::InvalidTask {
-                message: format!("Unknown agent type: {}", agent_type),
-            }
-            .into()),
-        }
-    }
-}
+// TODO: AgentFactory needs to be updated for new config system
+// /// Factory for creating agents
+// pub struct AgentFactory;

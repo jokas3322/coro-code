@@ -1,6 +1,6 @@
 //! Interactive mode state management
 
-use lode_core::Config;
+use lode_core::ResolvedLlmConfig;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -8,7 +8,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InteractiveState {
     /// Current configuration
-    pub config: Config,
+    pub llm_config: ResolvedLlmConfig,
 
     /// Session metadata
     pub session_id: String,
@@ -25,9 +25,9 @@ pub struct InteractiveState {
 
 impl InteractiveState {
     /// Create a new interactive state
-    pub fn new(config: Config) -> Self {
+    pub fn new(llm_config: ResolvedLlmConfig) -> Self {
         Self {
-            config,
+            llm_config,
             session_id: uuid::Uuid::new_v4().to_string(),
             working_dir: std::env::current_dir()
                 .unwrap_or_default()

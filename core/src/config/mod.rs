@@ -1,17 +1,7 @@
-//! Configuration management and parsing
+//! Minimal configuration module for Lode core
+//!
+//! Only exports pure data types. All loading logic is in CLI layer.
 
-pub mod agent_config;
-pub mod api_config;
-pub mod cache;
-pub mod config;
-pub mod loader;
-pub mod model_config;
-pub mod provider_config;
+pub mod types;
 
-pub use agent_config::AgentConfig;
-pub use api_config::{AnthropicConfig, ApiProvider, ApiProviderConfig, GoogleConfig, OpenAIConfig};
-pub use cache::ConfigCache;
-pub use config::Config;
-pub use loader::ConfigLoader;
-pub use model_config::ModelConfig;
-pub use provider_config::ProviderConfig;
+pub use types::{ModelParams, Protocol, ResolvedLlmConfig};

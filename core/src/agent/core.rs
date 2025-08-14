@@ -1,9 +1,8 @@
-//! TraeAgent implementation
+//! AgentCore implementation
 
+use super::config::AgentConfig;
 use crate::agent::prompt::{build_system_prompt_with_context, build_user_message};
 use crate::agent::{Agent, AgentExecution, AgentResult};
-use crate::config::{AgentConfig, Config};
-
 use crate::error::{AgentError, Result};
 use crate::llm::{ChatOptions, LlmClient, LlmMessage, LlmResponse};
 use crate::output::{
@@ -31,41 +30,34 @@ pub struct AgentCore {
 }
 
 impl AgentCore {
-    /// Create a new TraeAgent with output handler
-    pub async fn new_with_output(
+    /// Create a new AgentCore with resolved LLM configuration
+    pub async fn new_with_llm_config(
         agent_config: AgentConfig,
-        config: Config,
+        llm_config: crate::config::ResolvedLlmConfig,
         output: Box<dyn AgentOutput>,
     ) -> Result<Self> {
-        // Get model configuration
-        let model_config = config
-            .get_model(&agent_config.model)
-            .ok_or_else(|| AgentError::NotInitialized)?
-            .clone();
-
-        // Get provider configuration
-        let provider_config = config
-            .get_provider(&model_config.model_provider)
-            .ok_or_else(|| AgentError::NotInitialized)?
-            .clone();
-
-        // Create LLM client
-        let llm_client: Arc<dyn LlmClient> = match provider_config.provider.as_str() {
-            "anthropic" => Arc::new(crate::llm::AnthropicClient::new(
-                &provider_config,
-                &model_config,
-            )?),
-            "openai" => Arc::new(crate::llm::OpenAiClient::new(
-                &provider_config,
-                &model_config,
-            )?),
-            _ => {
-                return Err(AgentError::NotInitialized.into());
+        // Create LLM client based on protocol
+        let llm_client: Arc<dyn LlmClient> = match llm_config.protocol {
+            crate::config::Protocol::OpenAICompat => {
+                Arc::new(crate::llm::OpenAiClient::new(&llm_config)?)
+            }
+            crate::config::Protocol::Anthropic => {
+                Arc::new(crate::llm::AnthropicClient::new(&llm_config)?)
+            }
+            crate::config::Protocol::GoogleAI => {
+                return Err(AgentError::NotInitialized.into()); // TODO: Implement GoogleAI client
+            }
+            crate::config::Protocol::AzureOpenAI => {
+                // Azure OpenAI uses the same client as OpenAI
+                Arc::new(crate::llm::OpenAiClient::new(&llm_config)?)
+            }
+            crate::config::Protocol::Custom(_) => {
+                return Err(AgentError::NotInitialized.into()); // TODO: Implement custom protocol support
             }
         };
 
         // Create tool executor
-        let tool_registry = ToolRegistry::default();
+        let tool_registry = crate::tools::ToolRegistry::default();
         let tool_executor = tool_registry.create_executor(&agent_config.tools);
 
         Ok(Self {
@@ -80,37 +72,35 @@ impl AgentCore {
         })
     }
 
+    /// Get agent configuration
+    pub fn config(&self) -> &AgentConfig {
+        &self.config
+    }
+
     /// Create a new TraeAgent with custom tool registry and output handler
     pub async fn new_with_output_and_registry(
         agent_config: AgentConfig,
-        config: Config,
+        llm_config: crate::config::ResolvedLlmConfig,
         output: Box<dyn AgentOutput>,
         tool_registry: ToolRegistry,
     ) -> Result<Self> {
-        // Get model configuration
-        let model_config = config
-            .get_model(&agent_config.model)
-            .ok_or_else(|| AgentError::NotInitialized)?
-            .clone();
-
-        // Get provider configuration
-        let provider_config = config
-            .get_provider(&model_config.model_provider)
-            .ok_or_else(|| AgentError::NotInitialized)?
-            .clone();
-
-        // Create LLM client
-        let llm_client: Arc<dyn LlmClient> = match provider_config.provider.as_str() {
-            "anthropic" => Arc::new(crate::llm::AnthropicClient::new(
-                &provider_config,
-                &model_config,
-            )?),
-            "openai" => Arc::new(crate::llm::OpenAiClient::new(
-                &provider_config,
-                &model_config,
-            )?),
-            _ => {
-                return Err(AgentError::NotInitialized.into());
+        // Create LLM client based on protocol
+        let llm_client: Arc<dyn LlmClient> = match llm_config.protocol {
+            crate::config::Protocol::OpenAICompat => {
+                Arc::new(crate::llm::OpenAiClient::new(&llm_config)?)
+            }
+            crate::config::Protocol::Anthropic => {
+                Arc::new(crate::llm::AnthropicClient::new(&llm_config)?)
+            }
+            crate::config::Protocol::GoogleAI => {
+                return Err(AgentError::NotInitialized.into()); // TODO: Implement GoogleAI client
+            }
+            crate::config::Protocol::AzureOpenAI => {
+                // Azure OpenAI uses the same client as OpenAI
+                Arc::new(crate::llm::OpenAiClient::new(&llm_config)?)
+            }
+            crate::config::Protocol::Custom(_) => {
+                return Err(AgentError::NotInitialized.into()); // TODO: Implement custom protocol support
             }
         };
 
@@ -129,10 +119,13 @@ impl AgentCore {
         })
     }
 
-    /// Create a new TraeAgent with default null output (for backward compatibility)
-    pub async fn new(agent_config: AgentConfig, config: Config) -> Result<Self> {
+    /// Create a new TraeAgent with default null output (for testing)
+    pub async fn new(
+        agent_config: AgentConfig,
+        llm_config: crate::config::ResolvedLlmConfig,
+    ) -> Result<Self> {
         use crate::output::events::NullOutput;
-        Self::new_with_output(agent_config, config, Box::new(NullOutput)).await
+        Self::new_with_llm_config(agent_config, llm_config, Box::new(NullOutput)).await
     }
 
     /// Set a custom system prompt for the agent
@@ -155,7 +148,7 @@ impl AgentCore {
 
             format!(
                 "{}\n\n\
-                 [System Context]:\n{}",
+                     [System Context]:\n{}",
                 custom_prompt, system_context
             )
         } else {
@@ -359,11 +352,22 @@ impl AgentCore {
             ..Default::default()
         });
 
-        // Make LLM request (non-streaming)
-        let response = self
+        // Make LLM request (non-streaming) with detailed error handling
+        let response = match self
             .llm_client
             .chat_completion(messages, Some(tool_definitions), options)
-            .await?;
+            .await
+        {
+            Ok(response) => response,
+            Err(e) => {
+                tracing::error!("❌ LLM request failed for step {}: {}", step, e);
+                let _ = self
+                    .output
+                    .error(&format!("LLM request failed: {}", e))
+                    .await;
+                return Err(e);
+            }
+        };
 
         // Update token usage
         if let Some(usage) = &response.usage {
@@ -760,12 +764,12 @@ impl AgentCore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::AgentConfig;
     use crate::error::Result;
     use crate::llm::{
         ChatOptions, LlmClient, LlmMessage, LlmResponse, MessageContent, MessageRole,
         ToolDefinition,
     };
+    use crate::AgentConfig;
     use async_trait::async_trait;
 
     // Mock LLM client for testing

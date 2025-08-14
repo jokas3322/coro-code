@@ -6,7 +6,7 @@
 use crate::interactive::message_handler::AppMessage;
 use crate::output::interactive_handler::{InteractiveMessage, InteractiveOutputConfig};
 use anyhow::Result;
-use lode_core::Config;
+use lode_core::ResolvedLlmConfig;
 use std::path::PathBuf;
 use tokio::sync::{broadcast, mpsc};
 
@@ -78,7 +78,7 @@ impl lode_core::output::AgentOutput for TokenTrackingOutputHandler {
 /// Execute agent task asynchronously and send updates to UI
 pub async fn execute_agent_task(
     task: String,
-    config: Config,
+    llm_config: ResolvedLlmConfig,
     project_path: PathBuf,
     ui_sender: broadcast::Sender<AppMessage>,
 ) -> Result<()> {
@@ -87,10 +87,8 @@ pub async fn execute_agent_task(
     use crate::tools::StatusReportToolFactory;
     use lode_core::tools::ToolRegistry;
 
-    // Get agent configuration
-    let mut agent_config = config.agents.get("lode_agent").cloned().unwrap_or_default();
-
-    // Add status_report tool to the tool list for interactive mode
+    // Create agent configuration with status_report tool for interactive mode
+    let mut agent_config = lode_core::AgentConfig::default();
     if !agent_config.tools.contains(&"status_report".to_string()) {
         agent_config.tools.push("status_report".to_string());
     }
@@ -123,13 +121,10 @@ pub async fn execute_agent_task(
         ui_sender.clone(),
     )));
 
-    // Create modified config with custom tool registry
-    let modified_config = config.clone();
-
     // Create and execute agent task
     let mut agent = lode_core::agent::AgentCore::new_with_output_and_registry(
         agent_config,
-        modified_config,
+        llm_config,
         token_tracking_output,
         tool_registry,
     )
@@ -143,6 +138,7 @@ pub async fn execute_agent_task(
         loop {
             match interrupt_receiver.recv().await {
                 Ok(AppMessage::AgentExecutionInterrupted { .. }) => {
+                    tracing::info!("🛑 Task interrupted by user");
                     return Err(anyhow::anyhow!("Task interrupted by user"));
                 }
                 Ok(_) => continue, // Ignore other messages
@@ -152,13 +148,20 @@ pub async fn execute_agent_task(
         Ok(())
     };
 
-    // Race between task execution and interruption
+    // Add timeout to prevent hanging
+    let timeout_future = tokio::time::sleep(tokio::time::Duration::from_secs(300)); // 5 minutes timeout
+
+    // Race between task execution, interruption, and timeout
     tokio::select! {
         result = task_future => {
             result?;
         }
         interrupt_result = interrupt_future => {
             interrupt_result?;
+        }
+        _ = timeout_future => {
+            tracing::error!("⏰ Task execution timed out after 5 minutes");
+            return Err(anyhow::anyhow!("Task execution timed out"));
         }
     }
 

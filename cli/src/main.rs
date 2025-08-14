@@ -11,12 +11,14 @@ use std::path::PathBuf;
 use tracing::info;
 
 mod commands;
+mod config;
 mod interactive;
 mod output;
 mod tools;
 mod ui;
 
 use commands::{interactive_command, run_command, test_command, tools_command};
+use config::CliConfigLoader;
 
 /// Lode - A high-performance AI coding agent
 #[derive(Parser)]
@@ -25,9 +27,25 @@ use commands::{interactive_command, run_command, test_command, tools_command};
 #[command(about = "A high-performance AI coding agent written in Rust")]
 #[command(long_about = None)]
 struct Cli {
-    /// Configuration directory path (for API provider configs)
-    #[arg(short, long, default_value = ".")]
-    config_dir: PathBuf,
+    /// Configuration file or directory path
+    #[arg(short, long)]
+    config: Option<PathBuf>,
+
+    /// Protocol to use (openai_compat, anthropic, google_ai, azure_openai)
+    #[arg(long)]
+    protocol: Option<String>,
+
+    /// API key override
+    #[arg(long)]
+    api_key: Option<String>,
+
+    /// Base URL override
+    #[arg(long)]
+    base_url: Option<String>,
+
+    /// Model name override
+    #[arg(long)]
+    model: Option<String>,
 
     /// Enable verbose logging
     #[arg(short, long)]
@@ -51,18 +69,6 @@ enum Commands {
     Run {
         /// The task to execute
         task: String,
-
-        /// Model provider to use
-        #[arg(long)]
-        provider: Option<String>,
-
-        /// Model name to use
-        #[arg(long)]
-        model: Option<String>,
-
-        /// API key for the model provider
-        #[arg(long)]
-        api_key: Option<String>,
 
         /// Maximum number of steps
         #[arg(long)]
@@ -99,6 +105,33 @@ enum Commands {
     Test,
 }
 
+/// Build a configuration loader from CLI arguments
+fn build_config_loader(cli: &Cli) -> CliConfigLoader {
+    let mut loader = CliConfigLoader::new();
+
+    if let Some(config_path) = &cli.config {
+        loader = loader.with_config_override(config_path.clone());
+    }
+
+    if let Some(protocol) = &cli.protocol {
+        loader = loader.with_protocol_override(protocol.clone());
+    }
+
+    if let Some(api_key) = &cli.api_key {
+        loader = loader.with_api_key_override(api_key.clone());
+    }
+
+    if let Some(base_url) = &cli.base_url {
+        loader = loader.with_base_url_override(base_url.clone());
+    }
+
+    if let Some(model) = &cli.model {
+        loader = loader.with_model_override(model.clone());
+    }
+
+    loader
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -122,12 +155,12 @@ async fn main() -> Result<()> {
         info!("Changed working directory to: {}", working_dir.display());
     }
 
+    // Build configuration loader
+    let config_loader = build_config_loader(&cli);
+
     match cli.command {
         Some(Commands::Run {
             task,
-            provider,
-            model,
-            api_key,
             max_steps,
             trajectory_file,
             must_patch,
@@ -135,10 +168,7 @@ async fn main() -> Result<()> {
         }) => {
             run_command(
                 task,
-                cli.config_dir,
-                provider,
-                model,
-                api_key,
+                config_loader,
                 max_steps,
                 trajectory_file,
                 must_patch,
@@ -151,12 +181,12 @@ async fn main() -> Result<()> {
         Some(Commands::Interactive {
             trajectory_file,
             debug_output,
-        }) => interactive_command(cli.config_dir, trajectory_file, debug_output).await,
+        }) => interactive_command(config_loader, trajectory_file, debug_output).await,
         Some(Commands::Tools) => tools_command().await,
         Some(Commands::Test) => test_command().await,
         None => {
             // Default to interactive mode
-            interactive_command(cli.config_dir, None, cli.debug_output).await
+            interactive_command(config_loader, None, cli.debug_output).await
         }
     }
 }

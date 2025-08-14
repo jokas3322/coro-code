@@ -1,22 +1,14 @@
 //! Anthropic Claude client implementation
 
-use crate::config::{ ModelConfig, ProviderConfig };
-use crate::error::{ LlmError, Result };
+use crate::config::ResolvedLlmConfig;
+use crate::error::{LlmError, Result};
 use crate::llm::{
-    ChatOptions,
-    FinishReason,
-    LlmClient,
-    LlmMessage,
-    LlmResponse,
-    LlmStreamChunk,
-    MessageRole,
-    ToolDefinition,
-    Usage,
+    ChatOptions, FinishReason, LlmClient, LlmMessage, LlmResponse, LlmStreamChunk, MessageRole,
+    ToolDefinition, Usage,
 };
 use async_trait::async_trait;
 use reqwest::Client;
-use serde::{ Deserialize, Serialize };
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
 /// Anthropic Claude client
 pub struct AnthropicClient {
@@ -24,25 +16,26 @@ pub struct AnthropicClient {
     api_key: String,
     base_url: String,
     model: String,
-    model_config: ModelConfig,
+    headers: std::collections::HashMap<String, String>,
 }
 
 impl AnthropicClient {
-    /// Create a new Anthropic client
-    pub fn new(provider_config: &ProviderConfig, model_config: &ModelConfig) -> Result<Self> {
-        let api_key = provider_config.get_api_key().ok_or_else(|| LlmError::Authentication {
-            message: "No API key found for Anthropic".to_string(),
-        })?;
+    /// Create a new Anthropic client from resolved LLM config
+    pub fn new(config: &ResolvedLlmConfig) -> Result<Self> {
+        if config.api_key.is_empty() {
+            return Err(crate::error::Error::Llm(LlmError::Authentication {
+                message: "No API key found for Anthropic".to_string(),
+            }));
+        }
 
         let client = Client::new();
-        let base_url = provider_config.get_base_url();
 
         Ok(Self {
             client,
-            api_key,
-            base_url,
-            model: model_config.model.clone(),
-            model_config: model_config.clone(),
+            api_key: config.api_key.clone(),
+            base_url: config.base_url.clone(),
+            model: config.model.clone(),
+            headers: config.headers.clone(),
         })
     }
 }
@@ -53,17 +46,19 @@ impl LlmClient for AnthropicClient {
         &self,
         messages: Vec<LlmMessage>,
         tools: Option<Vec<ToolDefinition>>,
-        options: Option<ChatOptions>
+        options: Option<ChatOptions>,
     ) -> Result<LlmResponse> {
         let request = self.build_request(messages, tools, options)?;
 
-        let response = self.client
+        let response = self
+            .client
             .post(&format!("{}/v1/messages", self.base_url))
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", "2023-06-01")
             .header("content-type", "application/json")
             .json(&request)
-            .send().await
+            .send()
+            .await
             .map_err(|e| LlmError::Network {
                 message: e.to_string(),
             })?;
@@ -71,17 +66,15 @@ impl LlmClient for AnthropicClient {
         if !response.status().is_success() {
             let status = response.status().as_u16();
             let error_text = response.text().await.unwrap_or_default();
-            return Err(
-                (LlmError::ApiError {
-                    status,
-                    message: error_text,
-                }).into()
-            );
+            return Err((LlmError::ApiError {
+                status,
+                message: error_text,
+            })
+            .into());
         }
 
-        let anthropic_response: AnthropicResponse = response
-            .json().await
-            .map_err(|e| LlmError::Network {
+        let anthropic_response: AnthropicResponse =
+            response.json().await.map_err(|e| LlmError::Network {
                 message: format!("Failed to parse response: {}", e),
             })?;
 
@@ -104,14 +97,13 @@ impl LlmClient for AnthropicClient {
         &self,
         _messages: Vec<LlmMessage>,
         _tools: Option<Vec<ToolDefinition>>,
-        _options: Option<ChatOptions>
+        _options: Option<ChatOptions>,
     ) -> Result<Box<dyn futures::Stream<Item = Result<LlmStreamChunk>> + Send + Unpin + '_>> {
         // TODO: Implement streaming support
-        Err(
-            (LlmError::InvalidRequest {
-                message: "Streaming not yet implemented for Anthropic".to_string(),
-            }).into()
-        )
+        Err((LlmError::InvalidRequest {
+            message: "Streaming not yet implemented for Anthropic".to_string(),
+        })
+        .into())
     }
 }
 
@@ -120,7 +112,7 @@ impl AnthropicClient {
         &self,
         messages: Vec<LlmMessage>,
         tools: Option<Vec<ToolDefinition>>,
-        options: Option<ChatOptions>
+        options: Option<ChatOptions>,
     ) -> Result<AnthropicRequest> {
         let options = options.unwrap_or_default();
 
@@ -139,9 +131,9 @@ impl AnthropicClient {
             }
         }
 
-        let max_tokens = options.max_tokens.or(self.model_config.max_tokens).unwrap_or(4096);
+        let max_tokens = options.max_tokens.unwrap_or(4096);
 
-        let temperature = options.temperature.or(self.model_config.temperature).unwrap_or(0.5);
+        let temperature = options.temperature.unwrap_or(0.5);
 
         Ok(AnthropicRequest {
             model: self.model.clone(),
@@ -149,22 +141,18 @@ impl AnthropicClient {
             temperature,
             system: system_message,
             messages: conversation_messages,
-            tools: tools.map(|t|
-                t
-                    .into_iter()
-                    .map(|tool| tool.function)
-                    .collect()
-            ),
-            stop_sequences: options.stop.or(self.model_config.stop_sequences.clone()),
+            tools: tools.map(|t| t.into_iter().map(|tool| tool.function).collect()),
+            stop_sequences: options.stop,
         })
     }
 
     fn convert_response(&self, response: AnthropicResponse) -> LlmResponse {
         let message = LlmMessage::assistant(
-            response.content
+            response
+                .content
                 .first()
                 .map(|c| c.text.clone())
-                .unwrap_or_default()
+                .unwrap_or_default(),
         );
 
         let usage = response.usage.map(|u| Usage {

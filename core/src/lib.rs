@@ -16,10 +16,8 @@ pub mod tools;
 pub mod trajectory;
 
 // Re-export commonly used types
-pub use agent::Agent;
-pub use config::{
-    AgentConfig, ApiProvider, ApiProviderConfig, Config, ConfigLoader, ModelConfig, ProviderConfig,
-};
+pub use agent::{Agent, AgentBuilder, AgentConfig, OutputMode};
+pub use config::{ModelParams, Protocol, ResolvedLlmConfig};
 pub use trajectory::TrajectoryRecorder;
 
 /// Current version of the lode-core library
