@@ -138,7 +138,7 @@ pub async fn execute_agent_task(
         loop {
             match interrupt_receiver.recv().await {
                 Ok(AppMessage::AgentExecutionInterrupted { .. }) => {
-                    tracing::info!("🛑 Task interrupted by user");
+                    tracing::warn!("Task interrupted by user");
                     return Err(anyhow::anyhow!("Task interrupted by user"));
                 }
                 Ok(_) => continue, // Ignore other messages
@@ -160,7 +160,7 @@ pub async fn execute_agent_task(
             interrupt_result?;
         }
         _ = timeout_future => {
-            tracing::error!("⏰ Task execution timed out after 5 minutes");
+            tracing::error!("Task execution timed out after 5 minutes");
             return Err(anyhow::anyhow!("Task execution timed out"));
         }
     }

@@ -61,6 +61,8 @@ pub enum ContentBlock {
     ToolStatus,
     /// Tool execution results/output
     ToolResult,
+    /// Debugging information
+    Debug,
 }
 
 /// Message types for the interactive app
@@ -180,21 +182,27 @@ pub fn app_message_to_ui_message(
                 Some(generate_message_id()),
                 false,
             )),
-            InteractiveMessage::TaskCompleted { success, summary } => {
-                let status_icon = if success { "✅" } else { "❌" };
-                Some((
-                    "system".to_string(),
-                    format!("{} Task completed: {}", status_icon, summary),
-                    Some(generate_message_id()),
-                    false,
-                ))
-            }
+            InteractiveMessage::TaskCompleted {
+                success: _,
+                summary,
+            } => Some((
+                "system".to_string(),
+                format!("Task completed: {}", summary),
+                Some(generate_message_id()),
+                false,
+            )),
+            InteractiveMessage::Debug(message) => Some((
+                "system".to_string(),
+                format!("Debug: {}", message),
+                Some(generate_message_id()),
+                false,
+            )),
             InteractiveMessage::ExecutionStats {
                 steps,
                 duration,
                 tokens,
             } => {
-                let mut stats = format!("📈 Executed {} steps in {:.2}s", steps, duration);
+                let mut stats = format!("Executed {} steps in {:.2}s", steps, duration);
                 if let Some(token_info) = tokens {
                     stats.push_str(&format!("\n{}", token_info));
                 }

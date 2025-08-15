@@ -34,13 +34,17 @@ pub enum InteractiveMessage {
     /// System message
     SystemMessage(String),
     /// Task completion
-    TaskCompleted { success: bool, summary: String },
+    TaskCompleted {
+        success: bool,
+        summary: String,
+    },
     /// Execution statistics
     ExecutionStats {
         steps: usize,
         duration: f64,
         tokens: Option<String>,
     },
+    Debug(String),
 }
 
 /// Interactive output configuration
@@ -119,7 +123,7 @@ impl AgentOutput for InteractiveOutputHandler {
                 }
 
                 AgentEvent::ExecutionCompleted {
-                    context,
+                    context: _,
                     success: _,
                     summary: _,
                 } => {
@@ -196,7 +200,7 @@ impl AgentOutput for InteractiveOutputHandler {
                             // Debug messages are usually not shown in interactive mode
                         }
                         MessageLevel::Info => {
-                            let msg = format!("ℹ️  {}", content);
+                            let msg = format!("Info  {}", content);
                             let _ = ui_sender.send(InteractiveMessage::SystemMessage(msg));
                         }
                         MessageLevel::Normal => {
@@ -204,11 +208,11 @@ impl AgentOutput for InteractiveOutputHandler {
                             let _ = ui_sender.send(InteractiveMessage::SystemMessage(content));
                         }
                         MessageLevel::Warning => {
-                            let msg = format!("⚠️  Warning: {}", content);
+                            let msg = format!("Warning: {}", content);
                             let _ = ui_sender.send(InteractiveMessage::SystemMessage(msg));
                         }
                         MessageLevel::Error => {
-                            let msg = format!("❌ Error: {}", content);
+                            let msg = format!("Error: {}", content);
                             let _ = ui_sender.send(InteractiveMessage::SystemMessage(msg));
                         }
                     }

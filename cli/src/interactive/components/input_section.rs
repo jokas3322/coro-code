@@ -904,7 +904,7 @@ pub fn spawn_ui_agent_task(
                 if e.to_string().contains("Task interrupted by user") {
                     // Don't show error message for user interruptions
                 } else {
-                    let _ = ui_sender.send(AppMessage::SystemMessage(format!("❌ Error: {}", e)));
+                    let _ = ui_sender.send(AppMessage::SystemMessage(format!("Error: {}", e)));
                 }
                 let _ = ui_sender.send(AppMessage::AgentExecutionCompleted);
             }

@@ -65,9 +65,9 @@ impl AgentOutput for CliOutputHandler {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         match event {
             AgentEvent::ExecutionStarted { context } => {
-                debug!("🚀 Starting task execution...");
-                debug!("📝 Task: {}", context.task);
-                debug!("📁 Project path: {}", context.project_path);
+                debug!("Starting task execution...");
+                debug!("Task: {}", context.task);
+                debug!("Project path: {}", context.project_path);
 
                 // Don't show task execution header in normal mode
                 // The task execution will be shown through tool outputs
@@ -79,22 +79,22 @@ impl AgentOutput for CliOutputHandler {
                 summary,
             } => {
                 if success {
-                    debug!("✅ Task Completed!");
+                    debug!("Task Completed!");
                     debug!("Summary: {}", summary);
                 } else {
-                    debug!("❌ Task Failed!");
+                    debug!("Task Failed!");
                     debug!("Error: {}", summary);
                 }
 
                 // Always show execution statistics
-                debug!("📈 Executed {} steps", context.current_step);
-                debug!("⏱️  Duration: {:.2}s", context.execution_time.as_secs_f64());
+                debug!("Executed {} steps", context.current_step);
+                debug!("Duration: {:.2}s", context.execution_time.as_secs_f64());
 
                 // Show token usage if available
                 let token_usage = &context.token_usage;
                 if token_usage.total_tokens > 0 {
                     debug!(
-                        "🪙 Tokens: {} input + {} output = {} total",
+                        "Tokens: {} input + {} output = {} total",
                         token_usage.input_tokens,
                         token_usage.output_tokens,
                         token_usage.total_tokens
@@ -103,7 +103,7 @@ impl AgentOutput for CliOutputHandler {
             }
 
             AgentEvent::StepStarted { step_info } => {
-                debug!("🔄 Step {}: {}", step_info.step_number, step_info.task);
+                debug!("Step {}: {}", step_info.step_number, step_info.task);
             }
 
             AgentEvent::StepCompleted { step_info: _ } => {
@@ -197,20 +197,20 @@ impl AgentOutput for CliOutputHandler {
             } => {
                 match level {
                     MessageLevel::Debug => {
-                        debug!("🐛 Debug: {}", content);
+                        debug!("Debug: {}", content);
                     }
                     MessageLevel::Info => {
-                        info!("ℹ️  {}", content);
+                        info!("Info: {}", content);
                     }
                     MessageLevel::Normal => {
                         // Normal text output - just print without any prefix or emoji
                         println!("{}", content);
                     }
                     MessageLevel::Warning => {
-                        warn!("⚠️  Warning: {}", content);
+                        warn!("Warning: {}", content);
                     }
                     MessageLevel::Error => {
-                        error!("❌ Error: {}", content);
+                        error!("Error: {}", content);
                     }
                 }
             }
