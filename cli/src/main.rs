@@ -128,8 +128,8 @@ fn build_config_loader(cli: &Cli) -> CliConfigLoader {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Initialize tracing
-    let filter = if cli.verbose || cli.debug_output {
+    // Initialize tracing, only for run mode to debug
+    let filter = if (cli.verbose || cli.debug_output) && cli.task.is_some() {
         "debug"
     } else {
         "info"

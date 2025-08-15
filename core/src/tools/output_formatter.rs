@@ -13,6 +13,7 @@ pub const GRAY: &str = "\x1b[90m"; // Gray text for line numbers
 pub const WHITE: &str = "\x1b[97m"; // White text for executing status
 pub const GREEN: &str = "\x1b[92m"; // Green text for success status
 pub const RED: &str = "\x1b[91m"; // Red text for error status
+pub const YELLOW: &str = "\x1b[93m"; // Yellow text for warnings
 pub const RESET: &str = "\x1b[0m";
 
 /// Status of tool execution

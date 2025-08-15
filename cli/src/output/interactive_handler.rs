@@ -34,16 +34,14 @@ pub enum InteractiveMessage {
     /// System message
     SystemMessage(String),
     /// Task completion
-    TaskCompleted {
-        success: bool,
-        summary: String,
-    },
+    TaskCompleted { success: bool, summary: String },
     /// Execution statistics
     ExecutionStats {
         steps: usize,
         duration: f64,
         tokens: Option<String>,
     },
+    /// Debugging information
     Debug(String),
 }
 

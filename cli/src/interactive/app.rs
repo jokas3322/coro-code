@@ -1,6 +1,7 @@
 //! Interactive application using iocraft
 
 use crate::interactive::animation::UiAnimationConfig;
+use crate::interactive::blocks;
 use crate::interactive::components::input_section::InputSectionContext;
 use crate::interactive::components::logo::output_logo_to_terminal;
 use crate::interactive::components::status_line::StatusLineContext;

@@ -2,6 +2,7 @@
 
 pub mod animation;
 pub mod app;
+pub mod blocks;
 pub mod components;
 pub mod file_search;
 pub mod input_history;
