@@ -15,7 +15,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use tracing::info;
 
 mod commands;
 mod config;
@@ -140,12 +139,9 @@ async fn main() -> Result<()> {
         .with_env_filter(tracing_subscriber::EnvFilter::new(filter))
         .init();
 
-    info!("Starting Trae Agent CLI v{}", env!("CARGO_PKG_VERSION"));
-
     // Change working directory if specified
     if let Some(working_dir) = &cli.working_dir {
         std::env::set_current_dir(working_dir)?;
-        info!("Changed working directory to: {}", working_dir.display());
     }
 
     // Build configuration loader
@@ -168,7 +164,7 @@ async fn main() -> Result<()> {
         }
         // If task is provided with a subcommand, that's an error
         (Some(_), Some(_)) => {
-            eprintln!("Error: Cannot specify both a task and a subcommand");
+            tracing::error!("Error: Cannot specify both a task and a subcommand");
             std::process::exit(1);
         }
         // Handle subcommands

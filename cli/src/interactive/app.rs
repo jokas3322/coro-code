@@ -359,15 +359,15 @@ pub async fn run_rich_interactive(
     project_path: PathBuf,
 ) -> Result<()> {
     // Create UI broadcast channel and app context
-    let (ui_sender, _ui_rx) = broadcast::channel::<AppMessage>(256);
+    let (ui_sender, _) = broadcast::channel::<AppMessage>(256);
     let app_context = AppContext::new(llm_config, project_path, ui_sender);
 
-    // Run the iocraft-based UI with context provider in fullscreen mode
+    // Run the iocraft-based UI with context provider in render loop mode
     tokio::task::spawn_blocking(move || {
         smol::block_on(async {
             (element! {
                 ContextProvider(value: Context::owned(app_context)) {
-                    TraeApp
+                    CoroApp
                 }
             })
             .render_loop()
@@ -381,7 +381,7 @@ pub async fn run_rich_interactive(
 
 /// Main TRAE Interactive Application Component
 #[component]
-fn TraeApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
+fn CoroApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     // Get stdout handle for header and messages output
     let (stdout, _stderr) = hooks.use_output();
 
@@ -415,6 +415,7 @@ fn TraeApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         let mut rx = ui_sender_tips.subscribe();
         while let Ok(msg) = rx.recv().await {
             if app_message_to_ui_message(msg).is_some() {
+                // If has any message, hide tips
                 if *show_tips_clone.read() {
                     show_tips_clone.set(false);
                 }
@@ -447,7 +448,8 @@ fn TraeApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     // Subscribe to UI events for messages output
     let ui_sender_messages = ui_sender.clone();
     let mut messages_clone = messages.clone();
-    let mut message_line_counts_clone = message_line_counts.clone();
+    let mut message_line_counts_clone: State<std::collections::HashMap<String, usize>> =
+        message_line_counts.clone();
     let stdout_messages = stdout.clone();
     hooks.use_future(async move {
         let mut rx = ui_sender_messages.subscribe();
@@ -457,7 +459,8 @@ fn TraeApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
             {
                 use crate::interactive::message_handler::identify_content_block;
 
-                let mut current = messages_clone.read().clone();
+                let mut current: Vec<(String, String, Option<String>)> =
+                    messages_clone.read().clone();
                 let mut line_counts = message_line_counts_clone.read().clone();
                 let is_new_message = if let Some(msg_id) = &message_id {
                     if let Some(pos) = current
