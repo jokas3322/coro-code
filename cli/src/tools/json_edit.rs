@@ -1,10 +1,10 @@
 //! JSON editing tool
 
-use crate::error::Result;
-use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
-use crate::tools::utils::validate_absolute_path;
-use crate::impl_tool_factory;
 use async_trait::async_trait;
+use coro_core::error::Result;
+use coro_core::impl_tool_factory;
+use coro_core::tools::utils::validate_absolute_path;
+use coro_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use jsonpath_rust::JsonPathQuery;
 use serde_json::{json, Value};
 use std::path::Path;
@@ -24,7 +24,7 @@ impl Tool for JsonEditTool {
     fn name(&self) -> &str {
         "json_edit_tool"
     }
-    
+
     fn description(&self) -> &str {
         "Tool for editing JSON files with JSONPath expressions\n\
          * Supports targeted modifications to JSON structures using JSONPath syntax\n\
@@ -47,7 +47,7 @@ impl Tool for JsonEditTool {
          - `..key` - recursive descent (find key at any level)\n\
          - `[start:end]` - array slicing"
     }
-    
+
     fn parameters_schema(&self) -> serde_json::Value {
         json!({
             "type": "object",
@@ -77,39 +77,52 @@ impl Tool for JsonEditTool {
             "required": ["operation", "file_path"]
         })
     }
-    
+
     async fn execute(&self, call: ToolCall) -> Result<ToolResult> {
         let operation: String = call.get_parameter("operation")?;
         let file_path_str: String = call.get_parameter("file_path")?;
         let json_path: Option<String> = call.get_parameter("json_path").ok();
         let value: Option<Value> = call.get_parameter("value").ok();
         let pretty_print: bool = call.get_parameter_or("pretty_print", true);
-        
+
         let file_path = Path::new(&file_path_str);
         validate_absolute_path(file_path)?;
-        
+
         match operation.as_str() {
-            "view" => self.view_json(&call.id, file_path, json_path.as_deref(), pretty_print).await,
+            "view" => {
+                self.view_json(&call.id, file_path, json_path.as_deref(), pretty_print)
+                    .await
+            }
             "set" => {
-                let json_path = json_path.ok_or("json_path parameter is required for set operation")?;
+                let json_path =
+                    json_path.ok_or("json_path parameter is required for set operation")?;
                 let value = value.ok_or("value parameter is required for set operation")?;
-                self.set_json_value(&call.id, file_path, &json_path, value, pretty_print).await
+                self.set_json_value(&call.id, file_path, &json_path, value, pretty_print)
+                    .await
             }
             "add" => {
-                let json_path = json_path.ok_or("json_path parameter is required for add operation")?;
+                let json_path =
+                    json_path.ok_or("json_path parameter is required for add operation")?;
                 let value = value.ok_or("value parameter is required for add operation")?;
-                self.add_json_value(&call.id, file_path, &json_path, value, pretty_print).await
+                self.add_json_value(&call.id, file_path, &json_path, value, pretty_print)
+                    .await
             }
             "remove" => {
-                let json_path = json_path.ok_or("json_path parameter is required for remove operation")?;
-                self.remove_json_value(&call.id, file_path, &json_path, pretty_print).await
+                let json_path =
+                    json_path.ok_or("json_path parameter is required for remove operation")?;
+                self.remove_json_value(&call.id, file_path, &json_path, pretty_print)
+                    .await
             }
-            _ => Ok(ToolResult::error(&call.id, &format!(
-                "Unknown operation: {}. Supported operations: view, set, add, remove", operation
-            ))),
+            _ => Ok(ToolResult::error(
+                &call.id,
+                &format!(
+                    "Unknown operation: {}. Supported operations: view, set, add, remove",
+                    operation
+                ),
+            )),
         }
     }
-    
+
     fn examples(&self) -> Vec<ToolExample> {
         vec![
             ToolExample {
@@ -168,32 +181,44 @@ impl JsonEditTool {
         if !file_path.exists() {
             return Err(format!("File does not exist: {}", file_path.display()).into());
         }
-        
+
         let content = fs::read_to_string(file_path).await?;
         if content.trim().is_empty() {
             return Err(format!("File is empty: {}", file_path.display()).into());
         }
-        
+
         serde_json::from_str(&content)
             .map_err(|e| format!("Invalid JSON in file {}: {}", file_path.display(), e).into())
     }
-    
+
     /// Save JSON data to file
-    async fn save_json_file(&self, file_path: &Path, data: &Value, pretty_print: bool) -> Result<()> {
+    async fn save_json_file(
+        &self,
+        file_path: &Path,
+        data: &Value,
+        pretty_print: bool,
+    ) -> Result<()> {
         let content = if pretty_print {
             serde_json::to_string_pretty(data)?
         } else {
             serde_json::to_string(data)?
         };
-        
-        fs::write(file_path, content).await
+
+        fs::write(file_path, content)
+            .await
             .map_err(|e| format!("Error writing to file {}: {}", file_path.display(), e).into())
     }
-    
+
     /// View JSON file content or specific paths
-    async fn view_json(&self, call_id: &str, file_path: &Path, json_path: Option<&str>, pretty_print: bool) -> Result<ToolResult> {
+    async fn view_json(
+        &self,
+        call_id: &str,
+        file_path: &Path,
+        json_path: Option<&str>,
+        pretty_print: bool,
+    ) -> Result<ToolResult> {
         let data = self.load_json_file(file_path).await?;
-        
+
         if let Some(path) = json_path {
             match data.path(path) {
                 Ok(results) => {
@@ -203,9 +228,15 @@ impl JsonEditTool {
                         serde_json::to_string(&results)?
                     };
 
-                    Ok(ToolResult::success(call_id, &format!("JSONPath '{}' matches:\n{}", path, output)))
+                    Ok(ToolResult::success(
+                        call_id,
+                        &format!("JSONPath '{}' matches:\n{}", path, output),
+                    ))
                 }
-                Err(e) => Ok(ToolResult::error(call_id, &format!("Invalid JSONPath expression '{}': {}", path, e))),
+                Err(e) => Ok(ToolResult::error(
+                    call_id,
+                    &format!("Invalid JSONPath expression '{}': {}", path, e),
+                )),
             }
         } else {
             let output = if pretty_print {
@@ -213,54 +244,98 @@ impl JsonEditTool {
             } else {
                 serde_json::to_string(&data)?
             };
-            
-            Ok(ToolResult::success(call_id, &format!("JSON content of {}:\n{}", file_path.display(), output)))
+
+            Ok(ToolResult::success(
+                call_id,
+                &format!("JSON content of {}:\n{}", file_path.display(), output),
+            ))
         }
     }
-    
+
     /// Set value at specified JSONPath
-    async fn set_json_value(&self, call_id: &str, file_path: &Path, json_path: &str, value: Value, pretty_print: bool) -> Result<ToolResult> {
+    async fn set_json_value(
+        &self,
+        call_id: &str,
+        file_path: &Path,
+        json_path: &str,
+        value: Value,
+        pretty_print: bool,
+    ) -> Result<ToolResult> {
         let mut data = self.load_json_file(file_path).await?;
-        
+
         // For setting values, we need to implement path traversal manually
         // as jsonpath-rust doesn't have built-in mutation support
         if let Err(e) = self.set_value_at_path(&mut data, json_path, value.clone()) {
-            return Ok(ToolResult::error(call_id, &format!("Failed to set value: {}", e)));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!("Failed to set value: {}", e),
+            ));
         }
-        
+
         self.save_json_file(file_path, &data, pretty_print).await?;
-        
-        Ok(ToolResult::success(call_id, &format!(
-            "Successfully updated JSONPath '{}' with value: {}",
-            json_path,
-            serde_json::to_string(&value)?
-        )))
+
+        Ok(ToolResult::success(
+            call_id,
+            &format!(
+                "Successfully updated JSONPath '{}' with value: {}",
+                json_path,
+                serde_json::to_string(&value)?
+            ),
+        ))
     }
-    
+
     /// Add value at specified JSONPath
-    async fn add_json_value(&self, call_id: &str, file_path: &Path, json_path: &str, value: Value, pretty_print: bool) -> Result<ToolResult> {
+    async fn add_json_value(
+        &self,
+        call_id: &str,
+        file_path: &Path,
+        json_path: &str,
+        value: Value,
+        pretty_print: bool,
+    ) -> Result<ToolResult> {
         let mut data = self.load_json_file(file_path).await?;
-        
+
         if let Err(e) = self.add_value_at_path(&mut data, json_path, value) {
-            return Ok(ToolResult::error(call_id, &format!("Failed to add value: {}", e)));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!("Failed to add value: {}", e),
+            ));
         }
-        
+
         self.save_json_file(file_path, &data, pretty_print).await?;
-        
-        Ok(ToolResult::success(call_id, &format!("Successfully added value at JSONPath '{}'", json_path)))
+
+        Ok(ToolResult::success(
+            call_id,
+            &format!("Successfully added value at JSONPath '{}'", json_path),
+        ))
     }
-    
+
     /// Remove value at specified JSONPath
-    async fn remove_json_value(&self, call_id: &str, file_path: &Path, json_path: &str, pretty_print: bool) -> Result<ToolResult> {
+    async fn remove_json_value(
+        &self,
+        call_id: &str,
+        file_path: &Path,
+        json_path: &str,
+        pretty_print: bool,
+    ) -> Result<ToolResult> {
         let mut data = self.load_json_file(file_path).await?;
-        
+
         if let Err(e) = self.remove_value_at_path(&mut data, json_path) {
-            return Ok(ToolResult::error(call_id, &format!("Failed to remove value: {}", e)));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!("Failed to remove value: {}", e),
+            ));
         }
-        
+
         self.save_json_file(file_path, &data, pretty_print).await?;
-        
-        Ok(ToolResult::success(call_id, &format!("Successfully removed element(s) at JSONPath '{}'", json_path)))
+
+        Ok(ToolResult::success(
+            call_id,
+            &format!(
+                "Successfully removed element(s) at JSONPath '{}'",
+                json_path
+            ),
+        ))
     }
 
     /// Set value at JSONPath (simplified implementation)
@@ -325,7 +400,8 @@ impl JsonEditTool {
         // Navigate to parent
         for part in &path_parts[..path_parts.len() - 1] {
             if let Value::Object(ref mut map) = current {
-                current = map.get_mut(*part)
+                current = map
+                    .get_mut(*part)
                     .ok_or_else(|| format!("Path '{}' not found", part))?;
             } else {
                 return Err(format!("Cannot navigate to '{}' on non-object", part).into());
@@ -346,4 +422,9 @@ impl JsonEditTool {
     }
 }
 
-impl_tool_factory!(JsonEditToolFactory, JsonEditTool, "json_edit_tool", "Tool for editing JSON files with JSONPath expressions");
+impl_tool_factory!(
+    JsonEditToolFactory,
+    JsonEditTool,
+    "json_edit_tool",
+    "Tool for editing JSON files with JSONPath expressions"
+);

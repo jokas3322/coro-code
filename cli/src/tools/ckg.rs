@@ -1,11 +1,11 @@
 //! Code Knowledge Graph tool
 
-use crate::error::Result;
-use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
-use crate::tools::utils::validate_absolute_path;
-use crate::impl_tool_factory;
 use async_trait::async_trait;
-use rusqlite::{Connection, params};
+use coro_core::error::Result;
+use coro_core::impl_tool_factory;
+use coro_core::tools::utils::validate_absolute_path;
+use coro_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
+use rusqlite::{params, Connection};
 use serde_json::json;
 use std::collections::HashMap;
 use std::path::Path;
@@ -14,14 +14,14 @@ use tree_sitter::{Language, Parser, Tree};
 use walkdir::WalkDir;
 
 // Language support for tree-sitter
-use tree_sitter_rust::LANGUAGE as RUST_LANGUAGE;
-use tree_sitter_python::LANGUAGE as PYTHON_LANGUAGE;
-use tree_sitter_javascript::LANGUAGE as JAVASCRIPT_LANGUAGE;
-use tree_sitter_typescript::LANGUAGE_TYPESCRIPT as TYPESCRIPT_LANGUAGE;
-use tree_sitter_java::LANGUAGE as JAVA_LANGUAGE;
 use tree_sitter_c::LANGUAGE as C_LANGUAGE;
 use tree_sitter_cpp::LANGUAGE as CPP_LANGUAGE;
 use tree_sitter_go::LANGUAGE as GO_LANGUAGE;
+use tree_sitter_java::LANGUAGE as JAVA_LANGUAGE;
+use tree_sitter_javascript::LANGUAGE as JAVASCRIPT_LANGUAGE;
+use tree_sitter_python::LANGUAGE as PYTHON_LANGUAGE;
+use tree_sitter_rust::LANGUAGE as RUST_LANGUAGE;
+use tree_sitter_typescript::LANGUAGE_TYPESCRIPT as TYPESCRIPT_LANGUAGE;
 
 /// Supported programming languages
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -50,7 +50,7 @@ impl SupportedLanguage {
             _ => None,
         }
     }
-    
+
     fn get_language(&self) -> Language {
         match self {
             Self::Rust => RUST_LANGUAGE.into(),
@@ -88,7 +88,7 @@ pub struct CkgDatabase {
 impl CkgDatabase {
     pub fn new(db_path: &Path) -> Result<Self> {
         let conn = Connection::open(db_path)?;
-        
+
         // Create tables
         conn.execute(
             "CREATE TABLE IF NOT EXISTS symbols (
@@ -106,22 +106,22 @@ impl CkgDatabase {
             )",
             [],
         )?;
-        
+
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_symbols_name ON symbols(name)",
             [],
         )?;
-        
+
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_symbols_file ON symbols(file_path)",
             [],
         )?;
-        
+
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_symbols_type ON symbols(symbol_type)",
             [],
         )?;
-        
+
         let mut parsers = HashMap::new();
         for lang in [
             SupportedLanguage::Rust,
@@ -137,32 +137,34 @@ impl CkgDatabase {
             parser.set_language(&lang.get_language())?;
             parsers.insert(lang, parser);
         }
-        
+
         Ok(Self {
             connection: Arc::new(Mutex::new(conn)),
             parsers,
         })
     }
-    
+
     /// Parse a file and extract symbols
     pub fn parse_file(&mut self, file_path: &Path) -> Result<Vec<CodeSymbol>> {
         let content = std::fs::read_to_string(file_path)?;
-        let extension = file_path.extension()
+        let extension = file_path
+            .extension()
             .and_then(|ext| ext.to_str())
             .ok_or("No file extension found")?;
-        
+
         let language = SupportedLanguage::from_extension(extension)
             .ok_or(format!("Unsupported file extension: {}", extension))?;
-        
-        let parser = self.parsers.get_mut(&language)
+
+        let parser = self
+            .parsers
+            .get_mut(&language)
             .ok_or("Parser not available for language")?;
-        
-        let tree = parser.parse(&content, None)
-            .ok_or("Failed to parse file")?;
-        
+
+        let tree = parser.parse(&content, None).ok_or("Failed to parse file")?;
+
         self.extract_symbols(&tree, &content, file_path, &language)
     }
-    
+
     /// Extract symbols from parsed tree
     fn extract_symbols(
         &self,
@@ -173,21 +175,14 @@ impl CkgDatabase {
     ) -> Result<Vec<CodeSymbol>> {
         let mut symbols = Vec::new();
         let root_node = tree.root_node();
-        
+
         // This is a simplified implementation
         // In a full implementation, you would use language-specific queries
-        self.traverse_node(
-            root_node,
-            content,
-            file_path,
-            language,
-            &mut symbols,
-            None,
-        );
-        
+        self.traverse_node(root_node, content, file_path, language, &mut symbols, None);
+
         Ok(symbols)
     }
-    
+
     /// Recursively traverse AST nodes to extract symbols
     fn traverse_node(
         &self,
@@ -199,38 +194,38 @@ impl CkgDatabase {
         parent: Option<String>,
     ) {
         let node_type = node.kind();
-        
+
         // Extract symbol based on node type (simplified)
         if self.is_symbol_node(node_type, language) {
-            if let Some(symbol) = self.extract_symbol_from_node(
-                node,
-                content,
-                file_path,
-                language,
-                parent.clone(),
-            ) {
+            if let Some(symbol) =
+                self.extract_symbol_from_node(node, content, file_path, language, parent.clone())
+            {
                 symbols.push(symbol);
             }
         }
-        
+
         // Recursively process children
         let mut cursor = node.walk();
         for child in node.children(&mut cursor) {
             self.traverse_node(child, content, file_path, language, symbols, parent.clone());
         }
     }
-    
+
     /// Check if a node type represents a symbol we want to extract
     fn is_symbol_node(&self, node_type: &str, language: &SupportedLanguage) -> bool {
         match language {
             SupportedLanguage::Rust => matches!(
                 node_type,
-                "function_item" | "struct_item" | "enum_item" | "trait_item" | "impl_item" | "mod_item"
+                "function_item"
+                    | "struct_item"
+                    | "enum_item"
+                    | "trait_item"
+                    | "impl_item"
+                    | "mod_item"
             ),
-            SupportedLanguage::Python => matches!(
-                node_type,
-                "function_definition" | "class_definition"
-            ),
+            SupportedLanguage::Python => {
+                matches!(node_type, "function_definition" | "class_definition")
+            }
             SupportedLanguage::JavaScript | SupportedLanguage::TypeScript => matches!(
                 node_type,
                 "function_declaration" | "class_declaration" | "method_definition"
@@ -249,7 +244,7 @@ impl CkgDatabase {
             ),
         }
     }
-    
+
     /// Extract symbol information from a node
     fn extract_symbol_from_node(
         &self,
@@ -261,10 +256,10 @@ impl CkgDatabase {
     ) -> Option<CodeSymbol> {
         let name = self.get_symbol_name(node, content)?;
         let symbol_type = node.kind().to_string();
-        
+
         let start_position = node.start_position();
         let end_position = node.end_position();
-        
+
         Some(CodeSymbol {
             name,
             symbol_type,
@@ -277,7 +272,7 @@ impl CkgDatabase {
             language: format!("{:?}", language),
         })
     }
-    
+
     /// Get symbol name from node
     fn get_symbol_name(&self, node: tree_sitter::Node, content: &str) -> Option<String> {
         // This is a simplified implementation
@@ -290,11 +285,14 @@ impl CkgDatabase {
         }
         None
     }
-    
+
     /// Store symbols in database
     pub fn store_symbols(&self, symbols: &[CodeSymbol]) -> Result<()> {
-        let conn = self.connection.lock().map_err(|_| "Failed to acquire database lock")?;
-        
+        let conn = self
+            .connection
+            .lock()
+            .map_err(|_| "Failed to acquire database lock")?;
+
         for symbol in symbols {
             conn.execute(
                 "INSERT INTO symbols (name, symbol_type, file_path, start_line, end_line, start_byte, end_byte, parent, language)
@@ -312,21 +310,24 @@ impl CkgDatabase {
                 ],
             )?;
         }
-        
+
         Ok(())
     }
-    
+
     /// Query symbols from database
     pub fn query_symbols(&self, query: &str) -> Result<Vec<CodeSymbol>> {
-        let conn = self.connection.lock().map_err(|_| "Failed to acquire database lock")?;
-        
+        let conn = self
+            .connection
+            .lock()
+            .map_err(|_| "Failed to acquire database lock")?;
+
         let mut stmt = conn.prepare(
             "SELECT name, symbol_type, file_path, start_line, end_line, start_byte, end_byte, parent, language
              FROM symbols
              WHERE name LIKE ?1 OR symbol_type LIKE ?1 OR file_path LIKE ?1
              ORDER BY name"
         )?;
-        
+
         let symbol_iter = stmt.query_map([format!("%{}%", query)], |row| {
             Ok(CodeSymbol {
                 name: row.get(0)?,
@@ -340,12 +341,12 @@ impl CkgDatabase {
                 language: row.get(8)?,
             })
         })?;
-        
+
         let mut symbols = Vec::new();
         for symbol in symbol_iter {
             symbols.push(symbol?);
         }
-        
+
         Ok(symbols)
     }
 }
@@ -435,7 +436,10 @@ impl Tool for CkgTool {
 
         // Initialize database if needed
         {
-            let mut db_guard = self.database.lock().map_err(|_| "Failed to acquire database lock")?;
+            let mut db_guard = self
+                .database
+                .lock()
+                .map_err(|_| "Failed to acquire database lock")?;
             if db_guard.is_none() {
                 *db_guard = Some(CkgDatabase::new(Path::new(&db_path))?);
             }
@@ -445,9 +449,11 @@ impl Tool for CkgTool {
             "build" => {
                 let path: String = call.get_parameter("path")?;
                 let recursive: bool = call.get_parameter_or("recursive", true);
-                let file_extensions: Option<Vec<String>> = call.get_parameter("file_extensions").ok();
+                let file_extensions: Option<Vec<String>> =
+                    call.get_parameter("file_extensions").ok();
 
-                self.build_knowledge_graph(&call.id, &path, recursive, file_extensions).await
+                self.build_knowledge_graph(&call.id, &path, recursive, file_extensions)
+                    .await
             }
             "query" => {
                 let query: String = call.get_parameter("query")?;
@@ -457,12 +463,14 @@ impl Tool for CkgTool {
                 let path: String = call.get_parameter("path")?;
                 self.analyze_file(&call.id, &path).await
             }
-            "stats" => {
-                self.get_statistics(&call.id).await
-            }
-            _ => Ok(ToolResult::error(&call.id, &format!(
-                "Unknown operation: {}. Supported operations: build, query, analyze, stats", operation
-            ))),
+            "stats" => self.get_statistics(&call.id).await,
+            _ => Ok(ToolResult::error(
+                &call.id,
+                &format!(
+                    "Unknown operation: {}. Supported operations: build, query, analyze, stats",
+                    operation
+                ),
+            )),
         }
     }
 
@@ -517,18 +525,26 @@ impl CkgTool {
         validate_absolute_path(path)?;
 
         if !path.exists() {
-            return Ok(ToolResult::error(call_id, &format!("Path does not exist: {}", path.display())));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!("Path does not exist: {}", path.display()),
+            ));
         }
 
         if !path.is_dir() {
-            return Ok(ToolResult::error(call_id, &format!("Path is not a directory: {}", path.display())));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!("Path is not a directory: {}", path.display()),
+            ));
         }
 
         let extensions = file_extensions.unwrap_or_else(|| {
-            vec!["rs", "py", "js", "ts", "java", "c", "cpp", "cc", "cxx", "go"]
-                .into_iter()
-                .map(|s| s.to_string())
-                .collect()
+            vec![
+                "rs", "py", "js", "ts", "java", "c", "cpp", "cc", "cxx", "go",
+            ]
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect()
         });
 
         let mut total_files = 0;
@@ -556,7 +572,11 @@ impl CkgTool {
                                         total_symbols += symbol_count;
                                     }
                                     Err(e) => {
-                                        errors.push(format!("Error processing {}: {}", entry.path().display(), e));
+                                        errors.push(format!(
+                                            "Error processing {}: {}",
+                                            entry.path().display(),
+                                            e
+                                        ));
                                     }
                                 }
                             }
@@ -592,7 +612,10 @@ impl CkgTool {
 
     /// Process a single file
     async fn process_file(&self, file_path: &Path) -> Result<usize> {
-        let mut db_guard = self.database.lock().map_err(|_| "Failed to acquire database lock")?;
+        let mut db_guard = self
+            .database
+            .lock()
+            .map_err(|_| "Failed to acquire database lock")?;
         let database = db_guard.as_mut().ok_or("Database not initialized")?;
 
         let symbols = database.parse_file(file_path)?;
@@ -604,16 +627,26 @@ impl CkgTool {
 
     /// Query symbols from the knowledge graph
     async fn query_symbols(&self, call_id: &str, query: &str) -> Result<ToolResult> {
-        let db_guard = self.database.lock().map_err(|_| "Failed to acquire database lock")?;
+        let db_guard = self
+            .database
+            .lock()
+            .map_err(|_| "Failed to acquire database lock")?;
         let database = db_guard.as_ref().ok_or("Database not initialized")?;
 
         let symbols = database.query_symbols(query)?;
 
         if symbols.is_empty() {
-            return Ok(ToolResult::success(call_id, &format!("No symbols found matching query: '{}'", query)));
+            return Ok(ToolResult::success(
+                call_id,
+                &format!("No symbols found matching query: '{}'", query),
+            ));
         }
 
-        let mut result = format!("Found {} symbols matching query '{}':\n\n", symbols.len(), query);
+        let mut result = format!(
+            "Found {} symbols matching query '{}':\n\n",
+            symbols.len(),
+            query
+        );
 
         for (i, symbol) in symbols.iter().take(50).enumerate() {
             result.push_str(&format!(
@@ -646,14 +679,23 @@ impl CkgTool {
         validate_absolute_path(path)?;
 
         if !path.exists() {
-            return Ok(ToolResult::error(call_id, &format!("File does not exist: {}", path.display())));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!("File does not exist: {}", path.display()),
+            ));
         }
 
         if !path.is_file() {
-            return Ok(ToolResult::error(call_id, &format!("Path is not a file: {}", path.display())));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!("Path is not a file: {}", path.display()),
+            ));
         }
 
-        let mut db_guard = self.database.lock().map_err(|_| "Failed to acquire database lock")?;
+        let mut db_guard = self
+            .database
+            .lock()
+            .map_err(|_| "Failed to acquire database lock")?;
         let database = db_guard.as_mut().ok_or("Database not initialized")?;
 
         let symbols = database.parse_file(path)?;
@@ -664,13 +706,19 @@ impl CkgTool {
         // Group symbols by type
         let mut symbol_types: HashMap<String, Vec<&CodeSymbol>> = HashMap::new();
         for symbol in &symbols {
-            symbol_types.entry(symbol.symbol_type.clone()).or_default().push(symbol);
+            symbol_types
+                .entry(symbol.symbol_type.clone())
+                .or_default()
+                .push(symbol);
         }
 
         for (symbol_type, symbols_of_type) in symbol_types {
             result.push_str(&format!("{}s ({}):\n", symbol_type, symbols_of_type.len()));
             for symbol in symbols_of_type.iter().take(20) {
-                result.push_str(&format!("  - {} (lines {}-{})\n", symbol.name, symbol.start_line, symbol.end_line));
+                result.push_str(&format!(
+                    "  - {} (lines {}-{})\n",
+                    symbol.name, symbol.start_line, symbol.end_line
+                ));
             }
             if symbols_of_type.len() > 20 {
                 result.push_str(&format!("  ... and {} more\n", symbols_of_type.len() - 20));
@@ -683,30 +731,44 @@ impl CkgTool {
 
     /// Get statistics about the codebase
     async fn get_statistics(&self, call_id: &str) -> Result<ToolResult> {
-        let db_guard = self.database.lock().map_err(|_| "Failed to acquire database lock")?;
+        let db_guard = self
+            .database
+            .lock()
+            .map_err(|_| "Failed to acquire database lock")?;
         let database = db_guard.as_ref().ok_or("Database not initialized")?;
 
-        let conn = database.connection.lock().map_err(|_| "Failed to acquire database connection")?;
+        let conn = database
+            .connection
+            .lock()
+            .map_err(|_| "Failed to acquire database connection")?;
 
         // Get total symbol count
-        let total_symbols: i64 = conn.query_row("SELECT COUNT(*) FROM symbols", [], |row| row.get(0))?;
+        let total_symbols: i64 =
+            conn.query_row("SELECT COUNT(*) FROM symbols", [], |row| row.get(0))?;
 
         // Get symbols by type
-        let mut stmt = conn.prepare("SELECT symbol_type, COUNT(*) FROM symbols GROUP BY symbol_type ORDER BY COUNT(*) DESC")?;
-        let type_counts: std::result::Result<Vec<(String, i64)>, rusqlite::Error> = stmt.query_map([], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })?.collect();
+        let mut stmt = conn.prepare(
+            "SELECT symbol_type, COUNT(*) FROM symbols GROUP BY symbol_type ORDER BY COUNT(*) DESC",
+        )?;
+        let type_counts: std::result::Result<Vec<(String, i64)>, rusqlite::Error> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .collect();
         let type_counts = type_counts?;
 
         // Get symbols by language
-        let mut stmt = conn.prepare("SELECT language, COUNT(*) FROM symbols GROUP BY language ORDER BY COUNT(*) DESC")?;
-        let lang_counts: std::result::Result<Vec<(String, i64)>, rusqlite::Error> = stmt.query_map([], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })?.collect();
+        let mut stmt = conn.prepare(
+            "SELECT language, COUNT(*) FROM symbols GROUP BY language ORDER BY COUNT(*) DESC",
+        )?;
+        let lang_counts: std::result::Result<Vec<(String, i64)>, rusqlite::Error> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .collect();
         let lang_counts = lang_counts?;
 
         // Get file count
-        let file_count: i64 = conn.query_row("SELECT COUNT(DISTINCT file_path) FROM symbols", [], |row| row.get(0))?;
+        let file_count: i64 =
+            conn.query_row("SELECT COUNT(DISTINCT file_path) FROM symbols", [], |row| {
+                row.get(0)
+            })?;
 
         let mut result = format!("Code Knowledge Graph Statistics:\n\n");
         result.push_str(&format!("Total symbols: {}\n", total_symbols));
@@ -726,4 +788,9 @@ impl CkgTool {
     }
 }
 
-impl_tool_factory!(CkgToolFactory, CkgTool, "ckg_tool", "Code Knowledge Graph tool for analyzing and querying code structure");
+impl_tool_factory!(
+    CkgToolFactory,
+    CkgTool,
+    "ckg_tool",
+    "Code Knowledge Graph tool for analyzing and querying code structure"
+);

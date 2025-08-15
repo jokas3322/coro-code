@@ -1,16 +1,16 @@
 //! Bash execution tool
 
-use crate::error::Result;
-use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
-use crate::tools::utils::maybe_truncate;
-use crate::impl_tool_factory;
 use async_trait::async_trait;
+use coro_core::error::Result;
+use coro_core::impl_tool_factory;
+use coro_core::tools::utils::maybe_truncate;
+use coro_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use serde_json::json;
 use std::process::Stdio;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
+use tokio::sync::Mutex;
 use tokio::time::{sleep, timeout, Duration};
 
 /// A session of a bash shell
@@ -44,8 +44,8 @@ impl BashSession {
 
         let mut cmd = Command::new(&self.command);
         cmd.stdin(Stdio::piped())
-           .stdout(Stdio::piped())
-           .stderr(Stdio::piped());
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
 
         // On Unix-like systems, set process group
         #[cfg(unix)]
@@ -81,7 +81,8 @@ impl BashSession {
             return Err(format!(
                 "timed out: bash has not returned in {} seconds and must be restarted",
                 self.timeout.as_secs()
-            ).into());
+            )
+            .into());
         }
 
         let process = self.process.as_mut().unwrap();
@@ -91,11 +92,14 @@ impl BashSession {
             return Err(format!(
                 "bash has exited with returncode {}. tool must be restarted.",
                 status.code().unwrap_or(-1)
-            ).into());
+            )
+            .into());
         }
 
         let _error_code = 0;
-        let (sentinel_before, sentinel_after) = self.sentinel.split_once("__ERROR_CODE__")
+        let (sentinel_before, sentinel_after) = self
+            .sentinel
+            .split_once("__ERROR_CODE__")
             .ok_or("Invalid sentinel format")?;
 
         let errcode_retriever = "$?";
@@ -160,8 +164,13 @@ impl BashSession {
                 }
             }
 
-            Ok::<(i32, String, String), crate::error::Error>((error_code, output, String::new()))
-        }).await;
+            Ok::<(i32, String, String), coro_core::error::Error>((
+                error_code,
+                output,
+                String::new(),
+            ))
+        })
+        .await;
 
         match result {
             Ok(Ok((exit_code, stdout, stderr))) => {
@@ -178,7 +187,8 @@ impl BashSession {
                 Err(format!(
                     "timed out: bash has not returned in {} seconds and must be restarted",
                     self.timeout.as_secs()
-                ).into())
+                )
+                .into())
             }
         }
     }
@@ -252,7 +262,10 @@ impl Tool for BashTool {
                 }
             }
 
-            return Ok(ToolResult::success(&call.id, &"tool has been restarted.".to_string()));
+            return Ok(ToolResult::success(
+                &call.id,
+                &"tool has been restarted.".to_string(),
+            ));
         }
 
         let command: String = call.get_parameter("command")?;
@@ -312,16 +325,17 @@ impl Tool for BashTool {
                     "stderr": stderr
                 })))
             }
-            Err(e) => {
-                Ok(ToolResult::error(&call.id, &format!("Error running bash command: {}", e)))
-            }
+            Err(e) => Ok(ToolResult::error(
+                &call.id,
+                &format!("Error running bash command: {}", e),
+            )),
         }
     }
 
     fn requires_confirmation(&self) -> bool {
         true // Bash commands can be dangerous
     }
-    
+
     fn examples(&self) -> Vec<ToolExample> {
         vec![
             ToolExample {

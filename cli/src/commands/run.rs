@@ -25,8 +25,9 @@ pub async fn run_command(
     info!("🤖 Using protocol: {}", llm_config.protocol.as_str());
     info!("🤖 Using model: {}", llm_config.model);
 
-    // Create agent configuration
+    // Create agent configuration with CLI tools
     let mut agent_config = AgentConfig::default();
+    agent_config.tools = crate::tools::get_default_cli_tools();
     if let Some(steps) = max_steps {
         agent_config.max_steps = steps;
     }
@@ -40,10 +41,11 @@ pub async fn run_command(
     };
     let cli_output = Box::new(CliOutputHandler::new(cli_config));
 
-    // Build agent with new configuration system
+    // Build agent with new configuration system and CLI tools
+    let cli_tool_registry = crate::tools::create_cli_tool_registry();
     let agent = AgentBuilder::new(llm_config)
         .with_agent_config(agent_config)
-        .build_with_output(cli_output)
+        .build_with_output_and_registry(cli_output, cli_tool_registry)
         .await?;
 
     // Initialize trajectory recorder

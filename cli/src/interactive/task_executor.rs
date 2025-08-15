@@ -85,10 +85,10 @@ pub async fn execute_agent_task(
     // Create a receiver to listen for interruption signals
     let mut interrupt_receiver = ui_sender.subscribe();
     use crate::tools::StatusReportToolFactory;
-    use coro_core::tools::ToolRegistry;
 
-    // Create agent configuration with status_report tool for interactive mode
+    // Create agent configuration with CLI tools and status_report tool for interactive mode
     let mut agent_config = coro_core::AgentConfig::default();
+    agent_config.tools = crate::tools::get_default_cli_tools();
     if !agent_config.tools.contains(&"status_report".to_string()) {
         agent_config.tools.push("status_report".to_string());
     }
@@ -115,8 +115,8 @@ pub async fn execute_agent_task(
         ui_sender.clone(),
     ));
 
-    // Create custom tool registry with status_report tool for interactive mode
-    let mut tool_registry = ToolRegistry::default();
+    // Create CLI tool registry with status_report tool for interactive mode
+    let mut tool_registry = crate::tools::create_cli_tool_registry();
     tool_registry.register_factory(Box::new(StatusReportToolFactory::with_ui_sender(
         ui_sender.clone(),
     )));

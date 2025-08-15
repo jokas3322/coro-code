@@ -1,14 +1,13 @@
 //! File editing tool
 
-use crate::error::Result;
-use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
-use crate::tools::utils::{
-    maybe_truncate, format_with_line_numbers, validate_absolute_path,
-    check_file_exists, validate_directory_operation, expand_tabs,
-    create_edit_snippet, run_command
-};
-use crate::impl_tool_factory;
 use async_trait::async_trait;
+use coro_core::error::Result;
+use coro_core::impl_tool_factory;
+use coro_core::tools::utils::{
+    check_file_exists, create_edit_snippet, expand_tabs, format_with_line_numbers, maybe_truncate,
+    run_command, validate_absolute_path, validate_directory_operation,
+};
+use coro_core::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use serde_json::json;
 use std::path::Path;
 
@@ -89,7 +88,7 @@ impl Tool for EditTool {
             "required": ["command", "path"]
         })
     }
-    
+
     async fn execute(&self, call: ToolCall) -> Result<ToolResult> {
         let command: String = call.get_parameter("command")?;
         let path_str: String = call.get_parameter("path")?;
@@ -106,27 +105,37 @@ impl Tool for EditTool {
                 self.view_handler(&call.id, path, view_range).await
             }
             "create" => {
-                let file_text: String = call.get_parameter("file_text")
-                    .map_err(|_| "Parameter `file_text` is required and must be a string for command: create")?;
+                let file_text: String = call.get_parameter("file_text").map_err(|_| {
+                    "Parameter `file_text` is required and must be a string for command: create"
+                })?;
                 self.create_handler(&call.id, path, &file_text).await
             }
             "str_replace" => {
                 let old_str: String = call.get_parameter("old_str")
                     .map_err(|_| "Parameter `old_str` is required and should be a string for command: str_replace")?;
                 let new_str: Option<String> = call.get_parameter("new_str").ok();
-                self.str_replace_handler(&call.id, path, &old_str, new_str.as_deref()).await
+                self.str_replace_handler(&call.id, path, &old_str, new_str.as_deref())
+                    .await
             }
             "insert" => {
-                let insert_line: i32 = call.get_parameter("insert_line")
-                    .map_err(|_| "Parameter `insert_line` is required and should be integer for command: insert")?;
-                let new_str: String = call.get_parameter("new_str")
+                let insert_line: i32 = call.get_parameter("insert_line").map_err(|_| {
+                    "Parameter `insert_line` is required and should be integer for command: insert"
+                })?;
+                let new_str: String = call
+                    .get_parameter("new_str")
                     .map_err(|_| "Parameter `new_str` is required for command: insert")?;
-                self.insert_handler(&call.id, path, insert_line, &new_str).await
+                self.insert_handler(&call.id, path, insert_line, &new_str)
+                    .await
             }
-            _ => Ok(ToolResult::error(&call.id, &format!(
-                "Unrecognized command {}. The allowed commands for the {} tool are: {}",
-                command, self.name(), EDIT_TOOL_COMMANDS.join(", ")
-            ))),
+            _ => Ok(ToolResult::error(
+                &call.id,
+                &format!(
+                    "Unrecognized command {}. The allowed commands for the {} tool are: {}",
+                    command,
+                    self.name(),
+                    EDIT_TOOL_COMMANDS.join(", ")
+                ),
+            )),
         }
     }
 
@@ -185,10 +194,18 @@ impl EditTool {
     }
 
     /// Handle view command
-    async fn view_handler(&self, call_id: &str, path: &Path, view_range: Option<Vec<i32>>) -> Result<ToolResult> {
+    async fn view_handler(
+        &self,
+        call_id: &str,
+        path: &Path,
+        view_range: Option<Vec<i32>>,
+    ) -> Result<ToolResult> {
         if path.is_dir() {
             if view_range.is_some() {
-                return Ok(ToolResult::error(call_id, "The `view_range` parameter is not allowed when `path` points to a directory."));
+                return Ok(ToolResult::error(
+                    call_id,
+                    "The `view_range` parameter is not allowed when `path` points to a directory.",
+                ));
             }
             return self.view_directory(call_id, path).await;
         }
@@ -214,13 +231,21 @@ impl EditTool {
     }
 
     /// View file contents with optional range
-    async fn view_file(&self, call_id: &str, path: &Path, view_range: Option<Vec<i32>>) -> Result<ToolResult> {
+    async fn view_file(
+        &self,
+        call_id: &str,
+        path: &Path,
+        view_range: Option<Vec<i32>>,
+    ) -> Result<ToolResult> {
         let file_content = self.read_file(path)?;
         let init_line = 1;
 
         let content_to_show = if let Some(range) = view_range {
             if range.len() != 2 {
-                return Ok(ToolResult::error(call_id, "Invalid `view_range`. It should be a list of two integers."));
+                return Ok(ToolResult::error(
+                    call_id,
+                    "Invalid `view_range`. It should be a list of two integers.",
+                ));
             }
 
             let file_lines: Vec<&str> = file_content.lines().collect();
@@ -260,18 +285,36 @@ impl EditTool {
             (file_content, init_line)
         };
 
-        let output = self.make_output(&content_to_show.0, &format!("{}", path.display()), content_to_show.1);
+        let output = self.make_output(
+            &content_to_show.0,
+            &format!("{}", path.display()),
+            content_to_show.1,
+        );
         Ok(ToolResult::success(call_id, &output))
     }
 
     /// Handle create command
-    async fn create_handler(&self, call_id: &str, path: &Path, file_text: &str) -> Result<ToolResult> {
+    async fn create_handler(
+        &self,
+        call_id: &str,
+        path: &Path,
+        file_text: &str,
+    ) -> Result<ToolResult> {
         self.write_file(path, file_text)?;
-        Ok(ToolResult::success(call_id, &format!("File created successfully at: {}", path.display())))
+        Ok(ToolResult::success(
+            call_id,
+            &format!("File created successfully at: {}", path.display()),
+        ))
     }
 
     /// Handle str_replace command
-    async fn str_replace_handler(&self, call_id: &str, path: &Path, old_str: &str, new_str: Option<&str>) -> Result<ToolResult> {
+    async fn str_replace_handler(
+        &self,
+        call_id: &str,
+        path: &Path,
+        old_str: &str,
+        new_str: Option<&str>,
+    ) -> Result<ToolResult> {
         let file_content = expand_tabs(&self.read_file(path)?);
         let old_str_expanded = expand_tabs(old_str);
         let new_str_expanded = new_str.map(expand_tabs).unwrap_or_default();
@@ -279,10 +322,14 @@ impl EditTool {
         // Check if old_str is unique in the file
         let occurrences = file_content.matches(&old_str_expanded).count();
         if occurrences == 0 {
-            return Ok(ToolResult::error(call_id, &format!(
-                "No replacement was performed, old_str `{}` did not appear verbatim in {}.",
-                old_str, path.display()
-            )));
+            return Ok(ToolResult::error(
+                call_id,
+                &format!(
+                    "No replacement was performed, old_str `{}` did not appear verbatim in {}.",
+                    old_str,
+                    path.display()
+                ),
+            ));
         } else if occurrences > 1 {
             let file_lines: Vec<&str> = file_content.lines().collect();
             let lines: Vec<usize> = file_lines
@@ -307,7 +354,12 @@ impl EditTool {
         self.write_file(path, &new_file_content)?;
 
         // Create a snippet of the edited section
-        let replacement_line = file_content.split(&old_str_expanded).next().unwrap().lines().count();
+        let replacement_line = file_content
+            .split(&old_str_expanded)
+            .next()
+            .unwrap()
+            .lines()
+            .count();
         let snippet = create_edit_snippet(&new_file_content, replacement_line, SNIPPET_LINES);
 
         let success_msg = format!(
@@ -320,7 +372,13 @@ impl EditTool {
     }
 
     /// Handle insert command
-    async fn insert_handler(&self, call_id: &str, path: &Path, insert_line: i32, new_str: &str) -> Result<ToolResult> {
+    async fn insert_handler(
+        &self,
+        call_id: &str,
+        path: &Path,
+        insert_line: i32,
+        new_str: &str,
+    ) -> Result<ToolResult> {
         let file_text = expand_tabs(&self.read_file(path)?);
         let new_str_expanded = expand_tabs(new_str);
         let mut file_text_lines: Vec<&str> = file_text.lines().collect();
@@ -363,19 +421,28 @@ impl EditTool {
     /// Write file content
     fn write_file(&self, path: &Path, content: &str) -> Result<()> {
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create parent directories for {}: {}", path.display(), e))?;
+            std::fs::create_dir_all(parent).map_err(|e| {
+                format!(
+                    "Failed to create parent directories for {}: {}",
+                    path.display(),
+                    e
+                )
+            })?;
         }
 
-        std::fs::write(path, content)
-            .map_err(|e| format!("Ran into {} while trying to write to {}", e, path.display()).into())
+        std::fs::write(path, content).map_err(|e| {
+            format!("Ran into {} while trying to write to {}", e, path.display()).into()
+        })
     }
 
     /// Generate output for the CLI based on the content of a file
     fn make_output(&self, file_content: &str, file_descriptor: &str, init_line: i32) -> String {
         let truncated_content = maybe_truncate(file_content, None);
         let formatted_content = format_with_line_numbers(&truncated_content, init_line as usize);
-        format!("Here's the result of running `cat -n` on {}:\n{}\n", file_descriptor, formatted_content)
+        format!(
+            "Here's the result of running `cat -n` on {}:\n{}\n",
+            file_descriptor, formatted_content
+        )
     }
 }
 

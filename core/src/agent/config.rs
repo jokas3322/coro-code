@@ -109,6 +109,21 @@ impl AgentBuilder {
         super::AgentCore::new_with_llm_config(self.agent_config, self.llm_config, output).await
     }
 
+    /// Build the agent with custom output handler and tool registry
+    pub async fn build_with_output_and_registry(
+        self,
+        output: Box<dyn crate::output::AgentOutput>,
+        tool_registry: crate::tools::ToolRegistry,
+    ) -> crate::error::Result<super::AgentCore> {
+        super::AgentCore::new_with_output_and_registry(
+            self.agent_config,
+            self.llm_config,
+            output,
+            tool_registry,
+        )
+        .await
+    }
+
     /// Build the agent with null output (for testing)
     pub async fn build(self) -> crate::error::Result<super::AgentCore> {
         use crate::output::events::NullOutput;
