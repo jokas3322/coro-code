@@ -19,6 +19,21 @@ use std::time::{Duration, Instant};
 use tokio::sync::broadcast;
 use unicode_width::UnicodeWidthStr;
 
+/// Find the nearest character boundary at or before the given byte position
+/// This ensures we don't slice in the middle of a UTF-8 character
+fn find_char_boundary(text: &str, byte_pos: usize) -> usize {
+    if byte_pos >= text.len() {
+        return text.len();
+    }
+
+    // Find the nearest character boundary at or before byte_pos
+    text.char_indices()
+        .map(|(i, _)| i)
+        .filter(|&i| i <= byte_pos)
+        .last()
+        .unwrap_or(0)
+}
+
 /// Calculate cursor position (line, column) from text and byte position
 /// Returns (line_number, column_number) where both are 1-based
 fn calculate_cursor_position(text: &str, byte_pos: usize) -> (usize, usize) {
@@ -26,7 +41,9 @@ fn calculate_cursor_position(text: &str, byte_pos: usize) -> (usize, usize) {
         return (1, 1);
     }
 
-    let safe_pos = byte_pos.min(text.len());
+    // Ensure we're at a valid character boundary
+    let safe_pos = find_char_boundary(text, byte_pos);
+
     let text_before_cursor = &text[..safe_pos];
 
     // Count lines (number of newlines + 1)
@@ -299,7 +316,7 @@ pub fn EnhancedTextInput(
                             // Record time of recent text input
                             last_text_time.set(Instant::now());
                             // Ensure we're at a character boundary before inserting
-                            let safe_pos = pos.min(value.len());
+                            let safe_pos = find_char_boundary(&value, pos);
                             let char_pos = value[..safe_pos].chars().count();
 
                             let mut chars: Vec<char> = value.chars().collect();
@@ -365,7 +382,7 @@ pub fn EnhancedTextInput(
                         KeyCode::Backspace => {
                             if pos > 0 {
                                 // Find the start of the previous character
-                                let safe_pos = pos.min(value.len());
+                                let safe_pos = find_char_boundary(&value, pos);
                                 let char_start = value[..safe_pos]
                                     .char_indices()
                                     .last()
@@ -446,7 +463,7 @@ pub fn EnhancedTextInput(
                                 if value[pos..].chars().next().is_some() {
                                     // Convert to chars, remove one, and rebuild string
                                     let mut chars: Vec<char> = value.chars().collect();
-                                    let safe_pos = pos.min(value.len());
+                                    let safe_pos = find_char_boundary(&value, pos);
                                     let char_pos = value[..safe_pos].chars().count();
                                     if char_pos < chars.len() {
                                         chars.remove(char_pos);
@@ -513,7 +530,7 @@ pub fn EnhancedTextInput(
                             // Check if current line ends with backslash
                             let current_line_end_with_backslash = {
                                 // Find the current line by looking backwards from cursor position
-                                let safe_pos = pos.min(value.len());
+                                let safe_pos = find_char_boundary(&value, pos);
                                 let before_cursor = &value[..safe_pos];
                                 let current_line_start =
                                     before_cursor.rfind('\n').map(|i| i + 1).unwrap_or(0);
@@ -532,7 +549,7 @@ pub fn EnhancedTextInput(
 
                             if current_line_end_with_backslash {
                                 // Remove the trailing backslash and add newline
-                                let safe_pos = pos.min(value.len());
+                                let safe_pos = find_char_boundary(&value, pos);
                                 let before_cursor = &value[..safe_pos];
                                 let current_line_start =
                                     before_cursor.rfind('\n').map(|i| i + 1).unwrap_or(0);
@@ -568,7 +585,7 @@ pub fn EnhancedTextInput(
                                     <= Duration::from_millis(10);
                                 if modifiers.contains(KeyModifiers::SHIFT) || recent_text {
                                     // Insert newline - use safe character insertion
-                                    let safe_pos = pos.min(value.len());
+                                    let safe_pos = find_char_boundary(&value, pos);
                                     let char_pos = value[..safe_pos].chars().count();
                                     let mut chars: Vec<char> = value.chars().collect();
                                     chars.insert(char_pos, '\n');
@@ -597,7 +614,7 @@ pub fn EnhancedTextInput(
                         }
                         KeyCode::Left => {
                             if pos > 0 {
-                                let safe_pos = pos.min(value.len());
+                                let safe_pos = find_char_boundary(&value, pos);
                                 let char_start = value[..safe_pos]
                                     .char_indices()
                                     .last()
@@ -758,7 +775,10 @@ pub fn EnhancedTextInput(
                             // Show space or character at cursor position
                             let chars: Vec<char> = props.value.chars().collect();
                             // Convert byte index to char index safely
-                            let char_idx = props.value[..cursor_pos].chars().count();
+                            // First, ensure cursor_pos is at a valid character boundary
+                            let safe_cursor_pos = find_char_boundary(&props.value, cursor_pos);
+
+                            let char_idx = props.value[..safe_cursor_pos].chars().count();
                             if char_idx < chars.len() {
                                 chars[char_idx]
                             } else {
