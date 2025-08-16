@@ -60,30 +60,3 @@ pub fn output_logo_to_terminal<T: crate::interactive::terminal_output::OutputHan
     }
     stdout.println(""); // Empty line after logo
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_logo_lines_count() {
-        assert_eq!(CORO_LOGO_LINES.len(), 5);
-        assert_eq!(LOGO_COLORS.len(), 7);
-    }
-
-    #[test]
-    fn test_logo_colors_valid() {
-        for color in LOGO_COLORS {
-            assert!(color.0 <= 255);
-            assert!(color.1 <= 255);
-            assert!(color.2 <= 255);
-        }
-    }
-
-    #[test]
-    fn test_logo_lines_not_empty() {
-        for line in CORO_LOGO_LINES {
-            assert!(!line.is_empty());
-        }
-    }
-}

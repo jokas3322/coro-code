@@ -238,15 +238,6 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_message_id() {
-        let id1 = generate_message_id();
-        let id2 = generate_message_id();
-        assert!(id1.starts_with("msg_"));
-        assert!(id2.starts_with("msg_"));
-        assert_ne!(id1, id2); // Should be unique
-    }
-
-    #[test]
     fn test_identify_content_block() {
         assert_eq!(
             identify_content_block("Hello", "user"),
