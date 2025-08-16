@@ -13,6 +13,7 @@ use anyhow::Result;
 use coro_core::ResolvedLlmConfig;
 use iocraft::prelude::*;
 use regex::Regex;
+use serde::de;
 use std::path::PathBuf;
 use tokio::sync::broadcast;
 
@@ -335,6 +336,7 @@ struct AppContext {
     project_path: PathBuf,
     ui_sender: broadcast::Sender<AppMessage>,
     ui_anim: UiAnimationConfig,
+    debug_model: bool,
 }
 
 impl AppContext {
@@ -342,6 +344,7 @@ impl AppContext {
         llm_config: ResolvedLlmConfig,
         project_path: PathBuf,
         ui_sender: broadcast::Sender<AppMessage>,
+        debug_model: bool,
     ) -> Self {
         let ui_anim = UiAnimationConfig::from_env();
 
@@ -350,6 +353,7 @@ impl AppContext {
             project_path,
             ui_sender,
             ui_anim,
+            debug_model,
         }
     }
 }
@@ -358,10 +362,11 @@ impl AppContext {
 pub async fn run_rich_interactive(
     llm_config: ResolvedLlmConfig,
     project_path: PathBuf,
+    debug_model: bool,
 ) -> Result<()> {
     // Create UI broadcast channel and app context
     let (ui_sender, _) = broadcast::channel::<AppMessage>(256);
-    let app_context = AppContext::new(llm_config, project_path, ui_sender);
+    let app_context = AppContext::new(llm_config, project_path, ui_sender, debug_model);
 
     // Run the iocraft-based UI with context provider in render loop mode
     tokio::task::spawn_blocking(move || {

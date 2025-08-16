@@ -35,5 +35,5 @@ pub async fn interactive_command(
     }
 
     // Run the interactive mode (always use rich mode)
-    run_rich_interactive(llm_config, project_path).await
+    run_rich_interactive(llm_config, project_path, debug_output).await
 }
