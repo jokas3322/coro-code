@@ -30,7 +30,7 @@ fn find_char_boundary(text: &str, byte_pos: usize) -> usize {
     text.char_indices()
         .map(|(i, _)| i)
         .filter(|&i| i <= byte_pos)
-        .last()
+        .next_back()
         .unwrap_or(0)
 }
 
@@ -76,8 +76,8 @@ fn calculate_cursor_display_position(
     let mut display_line = 0usize;
     let mut current_line_width = 0usize;
 
-    let mut iter = text.char_indices().peekable();
-    while let Some((idx, ch)) = iter.next() {
+    let iter = text.char_indices().peekable();
+    for (idx, ch) in iter {
         if idx >= safe_pos {
             break;
         }
@@ -176,15 +176,15 @@ pub fn EnhancedTextInput(
 
     // State for file search popup
     let show_file_list = hooks.use_state(|| false);
-    let search_results = hooks.use_state(|| Vec::<FileSearchResult>::new());
+    let search_results = hooks.use_state(Vec::<FileSearchResult>::new);
     let selected_file_index = hooks.use_state(|| 0usize);
-    let current_query = hooks.use_state(|| String::new());
+    let current_query = hooks.use_state(String::new);
     // Track last text input time to disambiguate paste vs. manual Enter
     let last_text_time = hooks.use_state(|| Instant::now() - Duration::from_secs(10));
 
     // Cache for existing file references to avoid repeated parsing
-    let cached_existing_refs = hooks.use_state(|| Vec::<String>::new());
-    let last_input_for_refs = hooks.use_state(|| String::new());
+    let cached_existing_refs = hooks.use_state(Vec::<String>::new);
+    let last_input_for_refs = hooks.use_state(String::new);
 
     // Initialize search provider
     let search_provider =
@@ -196,16 +196,16 @@ pub fn EnhancedTextInput(
         let mut on_submit = props.on_submit.take();
         let mut on_cursor_position_change = props.on_cursor_position_change.take();
         let mut value = props.value.clone();
-        let mut cursor_pos = cursor_pos.clone();
-        let mut show_file_list = show_file_list.clone();
-        let mut search_results = search_results.clone();
-        let mut selected_file_index = selected_file_index.clone();
-        let mut current_query = current_query.clone();
-        let search_provider = search_provider.clone();
+        let mut cursor_pos = cursor_pos;
+        let mut show_file_list = show_file_list;
+        let mut search_results = search_results;
+        let mut selected_file_index = selected_file_index;
+        let mut current_query = current_query;
+        let search_provider = search_provider;
         let _project_path = project_path.clone();
-        let mut cached_existing_refs = cached_existing_refs.clone();
-        let mut last_input_for_refs = last_input_for_refs.clone();
-        let mut last_text_time = last_text_time.clone();
+        let mut cached_existing_refs = cached_existing_refs;
+        let mut last_input_for_refs = last_input_for_refs;
+        let mut last_text_time = last_text_time;
 
         move |event| {
             if !has_focus {
@@ -927,18 +927,18 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
     };
 
     // Local input state
-    let input_value = hooks.use_state(|| String::new());
+    let input_value = hooks.use_state(String::new);
     let is_task_running = hooks.use_state(|| false);
-    let current_user_input = hooks.use_state(|| String::new());
+    let current_user_input = hooks.use_state(String::new);
     let cursor_position = hooks.use_state(|| (1usize, 1usize)); // (line, column)
 
     // Input history state
-    let input_history = hooks.use_state(|| InputHistory::new());
+    let input_history = hooks.use_state(InputHistory::new);
     let history_initialized = hooks.use_state(|| false);
 
     // Initialize cursor position when input value changes
-    let mut cursor_position_init = cursor_position.clone();
-    let input_value_for_init = input_value.clone();
+    let mut cursor_position_init = cursor_position;
+    let input_value_for_init = input_value;
     hooks.use_future(async move {
         let current_input = input_value_for_init.read().clone();
         let (line, col) = calculate_cursor_position(&current_input, current_input.len());
@@ -947,8 +947,8 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
 
     // Load history from file on first render
     hooks.use_future({
-        let mut input_history = input_history.clone();
-        let mut history_initialized = history_initialized.clone();
+        let mut input_history = input_history;
+        let mut history_initialized = history_initialized;
         async move {
             if !*history_initialized.read() {
                 // Clone the history to avoid borrowing issues
@@ -967,7 +967,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
 
     // Periodic save mechanism (every 5 seconds if needed)
     hooks.use_future({
-        let mut input_history = input_history.clone();
+        let mut input_history = input_history;
         async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
@@ -986,8 +986,8 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
 
     // Subscribe to UI events to track task status
     let ui_sender_status = context.ui_sender.clone();
-    let mut is_task_running_clone = is_task_running.clone();
-    let mut current_user_input_clone = current_user_input.clone();
+    let mut is_task_running_clone = is_task_running;
+    let mut current_user_input_clone = current_user_input;
     hooks.use_future(async move {
         let mut rx = ui_sender_status.subscribe();
         while let Ok(event) = rx.recv().await {
@@ -1015,11 +1015,11 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
     // Handle keyboard events for task interruption and history navigation
     hooks.use_terminal_events({
         let ui_sender = ui_sender.clone();
-        let is_task_running = is_task_running.clone();
-        let current_user_input = current_user_input.clone();
-        let mut input_value = input_value.clone();
-        let mut cursor_position = cursor_position.clone();
-        let mut input_history = input_history.clone();
+        let is_task_running = is_task_running;
+        let current_user_input = current_user_input;
+        let mut input_value = input_value;
+        let mut cursor_position = cursor_position;
+        let mut input_history = input_history;
         move |event| {
             match event {
                 TerminalEvent::Key(KeyEvent { code, kind, .. })
@@ -1082,21 +1082,21 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
                 cursor_color: Some(Color::Rgb { r: 100, g: 149, b: 237 }),
                 project_path: project_path.clone(),
                 on_change: {
-                    let mut input_value = input_value.clone();
+                    let mut input_value = input_value;
                     move |new_value| {
                         input_value.set(new_value);
                     }
                 },
                 on_cursor_position_change: {
-                    let mut cursor_position = cursor_position.clone();
+                    let mut cursor_position = cursor_position;
                     move |(line, col)| {
                         cursor_position.set((line, col));
                     }
                 },
                 on_submit: {
-                    let mut input_value = input_value.clone();
-                    let mut cursor_position = cursor_position.clone();
-                    let mut input_history = input_history.clone();
+                    let mut input_value = input_value;
+                    let mut cursor_position = cursor_position;
+                    let mut input_history = input_history;
                     let ui_sender = ui_sender.clone();
                     let llm_config = llm_config.clone();
                     let project_path = project_path.clone();

@@ -6,4 +6,3 @@
 pub mod main_page;
 
 // Re-export commonly used types
-pub use main_page::{MainPage, MainPageProps};

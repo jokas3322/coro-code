@@ -1,7 +1,6 @@
 //! Interactive application using iocraft
 
 use crate::interactive::animation::UiAnimationConfig;
-use crate::interactive::blocks;
 use crate::interactive::components::input_section::InputSectionContext;
 use crate::interactive::components::logo::output_logo_to_terminal;
 use crate::interactive::components::status_line::StatusLineContext;
@@ -13,7 +12,6 @@ use anyhow::Result;
 use coro_core::ResolvedLlmConfig;
 use iocraft::prelude::*;
 use regex::Regex;
-use serde::de;
 use std::path::PathBuf;
 use tokio::sync::broadcast;
 
@@ -167,7 +165,7 @@ async fn read_directory_metadata(dir_path: &PathBuf) -> Result<String> {
         };
         formatted_content.push_str(&format!("Total size: {}\n\n", total_size_str));
     } else {
-        formatted_content.push_str("\n");
+        formatted_content.push('\n');
     }
 
     // List directories first
@@ -179,7 +177,7 @@ async fn read_directory_metadata(dir_path: &PathBuf) -> Result<String> {
                 name, subdir_count, subfile_count
             ));
         }
-        formatted_content.push_str("\n");
+        formatted_content.push('\n');
     }
 
     // List files
@@ -394,9 +392,9 @@ fn CoroApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     // Local state for header and messages
     let show_tips = hooks.use_state(|| true);
     let header_rendered = hooks.use_state(|| false);
-    let messages = hooks.use_state(|| Vec::<(String, String, Option<String>)>::new());
+    let messages = hooks.use_state(Vec::<(String, String, Option<String>)>::new);
     // Track line counts for each message to enable proper overwriting
-    let message_line_counts = hooks.use_state(|| std::collections::HashMap::<String, usize>::new());
+    let message_line_counts = hooks.use_state(std::collections::HashMap::<String, usize>::new);
 
     let (width, _height) = hooks.use_terminal_size();
     // Get current terminal width and reserve space for padding/borders
@@ -416,7 +414,7 @@ fn CoroApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
 
     // Subscribe to UI events for header tips management
     let ui_sender_tips = ui_sender.clone();
-    let mut show_tips_clone = show_tips.clone();
+    let mut show_tips_clone = show_tips;
     hooks.use_future(async move {
         let mut rx = ui_sender_tips.subscribe();
         while let Ok(msg) = rx.recv().await {
@@ -431,8 +429,8 @@ fn CoroApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
 
     // Output header to stdout when component mounts
     let stdout_clone = stdout.clone();
-    let show_tips_for_output = show_tips.clone();
-    let mut header_rendered_clone = header_rendered.clone();
+    let show_tips_for_output = show_tips;
+    let mut header_rendered_clone = header_rendered;
     hooks.use_future(async move {
         if !*header_rendered_clone.read() {
             // Use the logo output function from the logo module
@@ -453,9 +451,9 @@ fn CoroApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
 
     // Subscribe to UI events for messages output
     let ui_sender_messages = ui_sender.clone();
-    let mut messages_clone = messages.clone();
+    let mut messages_clone = messages;
     let mut message_line_counts_clone: State<std::collections::HashMap<String, usize>> =
-        message_line_counts.clone();
+        message_line_counts;
     let stdout_messages = stdout.clone();
     hooks.use_future(async move {
         let mut rx = ui_sender_messages.subscribe();

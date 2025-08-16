@@ -5,6 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Git ignore filter that respects .gitignore rules
+#[derive(Default)]
 pub struct GitIgnoreFilter {
     /// Patterns from .gitignore files
     ignore_patterns: Vec<GitIgnorePattern>,
@@ -208,11 +209,3 @@ impl GitIgnoreFilter {
     }
 }
 
-impl Default for GitIgnoreFilter {
-    fn default() -> Self {
-        Self {
-            ignore_patterns: Vec::new(),
-            ignored_paths: HashSet::new(),
-        }
-    }
-}

@@ -52,7 +52,7 @@ impl LlmClient for AnthropicClient {
 
         let response = self
             .client
-            .post(&format!("{}/v1/messages", self.base_url))
+            .post(format!("{}/v1/messages", self.base_url))
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", "2023-06-01")
             .header("content-type", "application/json")

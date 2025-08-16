@@ -770,7 +770,7 @@ impl CkgTool {
                 row.get(0)
             })?;
 
-        let mut result = format!("Code Knowledge Graph Statistics:\n\n");
+        let mut result = "Code Knowledge Graph Statistics:\n\n".to_string();
         result.push_str(&format!("Total symbols: {}\n", total_symbols));
         result.push_str(&format!("Total files: {}\n\n", file_count));
 

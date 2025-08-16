@@ -136,14 +136,14 @@ impl ResolvedLlmConfig {
 
         // Validate temperature range
         if let Some(temp) = self.params.temperature {
-            if temp < 0.0 || temp > 2.0 {
+            if !(0.0..=2.0).contains(&temp) {
                 return Err("Temperature must be between 0.0 and 2.0".to_string());
             }
         }
 
         // Validate top_p range
         if let Some(top_p) = self.params.top_p {
-            if top_p < 0.0 || top_p > 1.0 {
+            if !(0.0..=1.0).contains(&top_p) {
                 return Err("Top-p must be between 0.0 and 1.0".to_string());
             }
         }

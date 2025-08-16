@@ -4,7 +4,7 @@ use super::config::AgentConfig;
 use crate::agent::prompt::{build_system_prompt_with_context, build_user_message};
 use crate::agent::{Agent, AgentExecution, AgentResult};
 use crate::error::{AgentError, Result};
-use crate::llm::{ChatOptions, LlmClient, LlmMessage, LlmResponse};
+use crate::llm::{ChatOptions, LlmClient, LlmMessage};
 use crate::output::{
     AgentEvent, AgentExecutionContext, AgentOutput, TokenUsage, ToolExecutionInfo,
     ToolExecutionInfoBuilder, ToolExecutionStatus,

@@ -209,6 +209,12 @@ pub struct McpTool {
     servers: Arc<Mutex<HashMap<String, McpServer>>>,
 }
 
+impl Default for McpTool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl McpTool {
     pub fn new() -> Self {
         Self {

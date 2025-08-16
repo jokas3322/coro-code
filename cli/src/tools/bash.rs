@@ -310,7 +310,7 @@ impl Tool for BashTool {
 
                 if !stderr.is_empty() {
                     if !output.is_empty() {
-                        output.push_str("\n");
+                        output.push('\n');
                     }
                     output.push_str(&maybe_truncate(&stderr, None));
                 }

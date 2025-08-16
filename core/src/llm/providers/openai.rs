@@ -277,26 +277,23 @@ impl LlmClient for OpenAiClient {
         match &result {
             Ok(response) => {
                 // Log tool usage in response - critical for debugging tool calls
-                match &response.message.content {
-                    MessageContent::MultiModal(blocks) => {
-                        let tool_use_count = blocks
-                            .iter()
-                            .filter(|block| matches!(block, ContentBlock::ToolUse { .. }))
-                            .count();
-                        if tool_use_count > 0 {
-                            tracing::debug!(
-                                "OpenAI response contains {} tool calls",
-                                tool_use_count
-                            );
-                            // Log tool call details
-                            for block in blocks {
-                                if let ContentBlock::ToolUse { id, name, .. } = block {
-                                    tracing::debug!("Tool call: {} (id: {})", name, id);
-                                }
+                if let MessageContent::MultiModal(blocks) = &response.message.content {
+                    let tool_use_count = blocks
+                        .iter()
+                        .filter(|block| matches!(block, ContentBlock::ToolUse { .. }))
+                        .count();
+                    if tool_use_count > 0 {
+                        tracing::debug!(
+                            "OpenAI response contains {} tool calls",
+                            tool_use_count
+                        );
+                        // Log tool call details
+                        for block in blocks {
+                            if let ContentBlock::ToolUse { id, name, .. } = block {
+                                tracing::debug!("Tool call: {} (id: {})", name, id);
                             }
                         }
                     }
-                    _ => {}
                 }
 
                 // Log finish reason if it's tool-related

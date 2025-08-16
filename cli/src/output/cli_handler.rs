@@ -2,7 +2,7 @@
 
 use super::formatters::{DiffFormatter, ToolFormatter};
 use async_trait::async_trait;
-use coro_core::output::{AgentEvent, AgentOutput, MessageLevel, ToolExecutionStatus};
+use coro_core::output::{AgentEvent, AgentOutput, MessageLevel};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;

@@ -124,8 +124,7 @@ impl FileSearchEngine {
             } else {
                 // Invalid absolute path, try to make it relative by removing project path prefix
                 if let Some(project_str) = self.project_path.to_str() {
-                    if query.starts_with(project_str) {
-                        let relative = &query[project_str.len()..];
+                    if let Some(relative) = query.strip_prefix(project_str) {
                         relative.trim_start_matches('/').to_string()
                     } else {
                         query.to_string()
@@ -164,7 +163,7 @@ impl FileSearchEngine {
             );
 
             // If we don't have a good match yet, try relative path
-            if best_match.as_ref().map_or(true, |m| m.score < 0.9) {
+            if best_match.as_ref().is_none_or(|m| m.score < 0.9) {
                 if let Some(path_match) = self.matcher.match_string_with_lowercase(
                     &search_query,
                     &file.relative_path,
@@ -172,7 +171,7 @@ impl FileSearchEngine {
                 ) {
                     if best_match
                         .as_ref()
-                        .map_or(true, |m| path_match.score > m.score)
+                        .is_none_or(|m| path_match.score > m.score)
                     {
                         best_match = Some(path_match);
                     }
@@ -180,14 +179,14 @@ impl FileSearchEngine {
             }
 
             // Only try absolute path if we still don't have a good match
-            if best_match.as_ref().map_or(true, |m| m.score < 0.8) {
+            if best_match.as_ref().is_none_or(|m| m.score < 0.8) {
                 if let Some(abs_match) = self
                     .matcher
                     .match_string(&search_query, &file.path.to_string_lossy())
                 {
                     if best_match
                         .as_ref()
-                        .map_or(true, |m| abs_match.score > m.score)
+                        .is_none_or(|m| abs_match.score > m.score)
                     {
                         best_match = Some(abs_match);
                     }

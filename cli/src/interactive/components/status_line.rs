@@ -4,7 +4,7 @@
 //! agent execution status, progress, and token usage.
 
 use crate::interactive::animation::{
-    apply_easing, SpinnerAnimation, TokenAnimation, UiAnimationConfig,
+    apply_easing, UiAnimationConfig,
 };
 use crate::interactive::message_handler::AppMessage;
 use iocraft::prelude::*;
@@ -41,11 +41,11 @@ pub fn DynamicStatusLine(
 ) -> impl Into<AnyElement<'static>> {
     // Local state
     let is_processing = hooks.use_state(|| false);
-    let operation = hooks.use_state(|| String::new());
-    let start_time = hooks.use_state(|| std::time::Instant::now());
+    let operation = hooks.use_state(String::new);
+    let start_time = hooks.use_state(std::time::Instant::now);
     let current_tokens = hooks.use_state(|| 0u32);
     let target_tokens = hooks.use_state(|| 0u32);
-    let token_animation_start = hooks.use_state(|| std::time::Instant::now());
+    let token_animation_start = hooks.use_state(std::time::Instant::now);
 
     // Get animation config from props
     let context = &props.context;
@@ -55,12 +55,12 @@ pub fn DynamicStatusLine(
 
     // Subscribe to UI events (clone only the sender to avoid non-Send context capture)
     let ui_sender = context.ui_sender.clone();
-    let mut is_processing_clone = is_processing.clone();
-    let mut operation_clone = operation.clone();
-    let mut start_time_clone = start_time.clone();
-    let mut current_tokens_clone = current_tokens.clone();
-    let mut target_tokens_clone = target_tokens.clone();
-    let mut token_animation_start_clone = token_animation_start.clone();
+    let mut is_processing_clone = is_processing;
+    let mut operation_clone = operation;
+    let mut start_time_clone = start_time;
+    let mut current_tokens_clone = current_tokens;
+    let mut target_tokens_clone = target_tokens;
+    let mut token_animation_start_clone = token_animation_start;
     hooks.use_future(async move {
         let mut rx = ui_sender.subscribe();
         while let Ok(event) = rx.recv().await {
@@ -100,7 +100,7 @@ pub fn DynamicStatusLine(
 
     // Timer for elapsed and spinner
     let timer_tick = hooks.use_state(|| 0u64);
-    let mut timer_tick_clone = timer_tick.clone();
+    let mut timer_tick_clone = timer_tick;
     hooks.use_future(async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -109,10 +109,10 @@ pub fn DynamicStatusLine(
     });
 
     // Token animation loop using configured frame interval and easing
-    let mut current_tokens_anim = current_tokens.clone();
-    let token_animation_start_anim = token_animation_start.clone();
-    let token_animation_duration_anim = token_animation_duration.clone();
-    let target_tokens_anim = target_tokens.clone();
+    let mut current_tokens_anim = current_tokens;
+    let token_animation_start_anim = token_animation_start;
+    let token_animation_duration_anim = token_animation_duration;
+    let target_tokens_anim = target_tokens;
     let anim_cfg = context.ui_anim.clone();
     hooks.use_future(async move {
         loop {
@@ -143,7 +143,7 @@ pub fn DynamicStatusLine(
 
     let elapsed = start_time.read().elapsed().as_secs();
     let spinner_chars = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
-    let spinner_index = ((elapsed / 1) % 8) as usize;
+    let spinner_index = (elapsed % 8) as usize;
     let spinner = spinner_chars[spinner_index];
     let status_text = format!(
         "{} {}… ({}s · ↑ {} tokens · esc to interrupt)",

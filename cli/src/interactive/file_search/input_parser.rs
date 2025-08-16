@@ -14,7 +14,7 @@ pub fn should_show_file_search(input: &str, cursor_pos: usize) -> bool {
     let before_cursor = &input[..safe_cursor_pos];
 
     // Split by spaces and get the last segment
-    let last_segment = before_cursor.split(' ').last().unwrap_or("");
+    let last_segment = before_cursor.split(' ').next_back().unwrap_or("");
 
     // Check if last segment starts with @ (including just @)
     last_segment.starts_with('@')
@@ -34,7 +34,7 @@ pub fn extract_search_query(value: &str, cursor_pos: usize) -> Option<String> {
     let before_cursor = &value[..safe_cursor_pos];
 
     // Split by spaces and get the last segment
-    let last_segment = before_cursor.split(' ').last().unwrap_or("");
+    let last_segment = before_cursor.split(' ').next_back().unwrap_or("");
 
     // Check if last segment starts with @
     if last_segment.starts_with('@') {
@@ -244,11 +244,7 @@ pub fn extract_existing_file_references(input: &str, cursor_pos: usize) -> Vec<S
         // Find the @ position for current query
         let safe_cursor_pos = cursor_pos.min(input.len());
         let before_cursor = &input[..safe_cursor_pos];
-        if let Some(at_pos) = before_cursor.rfind('@') {
-            Some(at_pos)
-        } else {
-            None
-        }
+        before_cursor.rfind('@')
     } else {
         None
     };

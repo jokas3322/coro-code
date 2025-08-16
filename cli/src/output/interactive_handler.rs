@@ -4,7 +4,7 @@
 use super::cli_handler::{CliOutputConfig, CliOutputHandler};
 use super::formatters::{DiffFormatter, ToolFormatter};
 use async_trait::async_trait;
-use coro_core::output::{AgentEvent, AgentOutput, MessageLevel, ToolExecutionStatus};
+use coro_core::output::{AgentEvent, AgentOutput, MessageLevel};
 use coro_core::tools::output_formatter::{GRAY, RESET};
 use std::collections::HashMap;
 use std::sync::Arc;

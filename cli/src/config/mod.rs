@@ -2,4 +2,4 @@
 
 pub mod loader;
 
-pub use loader::{CliConfigLoader, RawConfig};
+pub use loader::CliConfigLoader;
