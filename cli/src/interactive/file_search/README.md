@@ -370,6 +370,11 @@ cargo test fuzzy::tests
 cargo test file_search -- --nocapture
 ```
 
+### Testing Notes
+
+- When writing tests for fuzzy search, prefer deterministic queries that match both directory and file names (e.g., use "src" instead of a bare extension like "rs").
+- Extension-only queries can be environment-sensitive and may not match directories in all cases, leading to flaky CI results.
+
 ### Test Coverage
 
 - **Input Parser Tests**: 4 test functions covering all input scenarios

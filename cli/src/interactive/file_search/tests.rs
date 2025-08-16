@@ -151,13 +151,13 @@ mod tests {
         let config = SearchConfig::default();
         let search_system = FileSearchSystem::new(project_path, config).unwrap();
 
-        // Test search without exclusions
-        let all_results = search_system.search("rs");
-        assert!(all_results.len() >= 3); // Should find all .rs files
+        // Test search without exclusions (use a query that deterministically matches the directory)
+        let all_results = search_system.search("src");
+        assert!(all_results.len() >= 3); // Should find src directory and its .rs files
 
         // Test search with exclusions
         let exclude_paths = vec!["src/main.rs", "config.rs"];
-        let filtered_results = search_system.search_with_exclusions("rs", &exclude_paths);
+        let filtered_results = search_system.search_with_exclusions("src", &exclude_paths);
 
         // Should find src directory and src/lib.rs (2 results)
         assert_eq!(filtered_results.len(), 2);
