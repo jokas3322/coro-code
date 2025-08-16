@@ -304,9 +304,27 @@ mod tests {
     use super::*;
     use coro_core::output::NullOutput;
 
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_temp_history_path(suffix: &str) -> PathBuf {
+        // Build a reasonably unique filename without extra dependencies
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let pid = std::process::id();
+        let mut path = std::env::temp_dir();
+        path.push(format!(
+            "coro_input_history_test_{}_{}_{}.txt",
+            suffix, pid, nanos
+        ));
+        path
+    }
+
     #[tokio::test]
     async fn test_add_entry() {
-        let mut history = InputHistory::new();
+        let tmp_path = unique_temp_history_path("add_entry");
+        let mut history = InputHistory::with_file_path(&tmp_path);
         let output = NullOutput;
 
         history.add_entry("first command".to_string());
@@ -450,7 +468,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_performance_batch_vs_individual_save() {
-        let mut history = InputHistory::new();
+        let tmp1 = unique_temp_history_path("batch");
+        let tmp2 = unique_temp_history_path("individual");
+        let mut history = InputHistory::with_file_path(&tmp1);
         let output = NullOutput;
 
         // Test batch add with single save (optimal approach)
@@ -465,7 +485,7 @@ mod tests {
         let batch_with_save_duration = start.elapsed();
 
         // Compare with individual saves (suboptimal approach)
-        let mut history2 = InputHistory::new();
+        let mut history2 = InputHistory::with_file_path(&tmp2);
         let start = std::time::Instant::now();
         for i in 0..100 {
             // Use fewer iterations due to I/O overhead
@@ -506,7 +526,8 @@ mod tests {
             .collect();
 
         // Test text format save performance
-        let mut text_history = InputHistory::new();
+        let tmp = unique_temp_history_path("text_perf");
+        let mut text_history = InputHistory::with_file_path(&tmp);
         for cmd in &test_commands {
             text_history.add_entry(cmd.clone());
         }
@@ -516,9 +537,7 @@ mod tests {
         let text_save_duration = start.elapsed();
 
         // Test text format load performance
-        let mut text_history_load = InputHistory::new();
-        // Set the same file path as the saved history
-        text_history_load.history_file_path = text_history.history_file_path.clone();
+        let mut text_history_load = InputHistory::with_file_path(&tmp);
         let start = std::time::Instant::now();
         text_history_load.load(&output).await.unwrap();
         let text_load_duration = start.elapsed();
