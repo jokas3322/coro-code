@@ -284,7 +284,7 @@ mod tests {
 
     #[test]
     fn test_router_error_types() {
-        use crate::interactive::router::RouterError;
+        use crate::interactive::router::core::RouterError;
 
         // Test RouterError variants
         let error = RouterError::NoRoutes;

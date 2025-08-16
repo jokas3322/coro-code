@@ -201,7 +201,7 @@ pub fn EnhancedTextInput(
         let mut search_results = search_results;
         let mut selected_file_index = selected_file_index;
         let mut current_query = current_query;
-        let search_provider = search_provider;
+
         let _project_path = project_path.clone();
         let mut cached_existing_refs = cached_existing_refs;
         let mut last_input_for_refs = last_input_for_refs;
@@ -1015,8 +1015,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
     // Handle keyboard events for task interruption and history navigation
     hooks.use_terminal_events({
         let ui_sender = ui_sender.clone();
-        let is_task_running = is_task_running;
-        let current_user_input = current_user_input;
+
         let mut input_value = input_value;
         let mut cursor_position = cursor_position;
         let mut input_history = input_history;

@@ -87,8 +87,10 @@ pub async fn execute_agent_task(
     use crate::tools::StatusReportToolFactory;
 
     // Create agent configuration with CLI tools and status_report tool for interactive mode
-    let mut agent_config = coro_core::AgentConfig::default();
-    agent_config.tools = crate::tools::get_default_cli_tools();
+    let mut agent_config = coro_core::AgentConfig {
+        tools: crate::tools::get_default_cli_tools(),
+        ..Default::default()
+    };
     if !agent_config.tools.contains(&"status_report".to_string()) {
         agent_config.tools.push("status_report".to_string());
     }

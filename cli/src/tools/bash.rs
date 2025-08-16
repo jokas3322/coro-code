@@ -50,6 +50,7 @@ impl BashSession {
         // On Unix-like systems, set process group
         #[cfg(unix)]
         {
+            #[allow(unused_imports)]
             use std::os::unix::process::CommandExt;
             cmd.process_group(0);
         }
@@ -66,7 +67,7 @@ impl BashSession {
 
         if let Some(mut process) = self.process.take() {
             if process.try_wait().unwrap_or(None).is_none() {
-                let _ = process.kill();
+                std::mem::drop(process.kill());
             }
         }
         self.started = false;

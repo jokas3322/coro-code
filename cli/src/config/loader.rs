@@ -205,15 +205,6 @@ impl CliConfigLoader {
         let coro_base_url = std::env::var("CORO_BASE_URL").ok();
         let coro_model = std::env::var("CORO_MODEL").ok();
 
-        // Check for model environment variables
-        let openai_model = std::env::var("OPENAI_MODEL").ok();
-        let anthropic_model = std::env::var("ANTHROPIC_MODEL").ok();
-        let google_model = std::env::var("GOOGLE_MODEL").ok();
-        let azure_model = std::env::var("AZURE_OPENAI_MODEL").ok();
-
-        // Check for generic model override
-        let coro_model = std::env::var("CORO_MODEL").ok();
-
         let available_keys: Vec<_> = [
             openai_key.as_ref().map(|_| "openai"),
             anthropic_key.as_ref().map(|_| "anthropic"),

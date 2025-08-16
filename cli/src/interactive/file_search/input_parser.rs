@@ -37,15 +37,70 @@ pub fn extract_search_query(value: &str, cursor_pos: usize) -> Option<String> {
     let last_segment = before_cursor.split(' ').next_back().unwrap_or("");
 
     // Check if last segment starts with @
-    if last_segment.starts_with('@') {
-        if last_segment.len() > 1 {
-            Some(last_segment[1..].to_string()) // Remove @ prefix
+    if let Some(stripped) = last_segment.strip_prefix('@') {
+        if !stripped.is_empty() {
+            Some(stripped.to_string()) // Remove @ prefix
         } else {
             Some(String::new()) // Just @ returns empty query
         }
     } else {
         None
     }
+}
+
+/// Extract all file references from input (excluding the current search query)
+///
+/// This function finds all @path references in the input except for the one currently being typed
+pub fn extract_existing_file_references(input: &str, cursor_pos: usize) -> Vec<String> {
+    let mut references = Vec::new();
+
+    // Get the current search query position to exclude it
+    let current_query_start = if let Some(_query) = extract_search_query(input, cursor_pos) {
+        // Find the @ position for current query
+        let safe_cursor_pos = cursor_pos.min(input.len());
+        let before_cursor = &input[..safe_cursor_pos];
+        before_cursor.rfind('@')
+    } else {
+        None
+    };
+
+    // Simple pattern matching for @path (avoiding regex dependency for now)
+    let chars: Vec<char> = input.chars().collect();
+    let mut i = 0;
+
+    while i < chars.len() {
+        if chars[i] == '@' {
+            // Skip the current search query being typed
+            if let Some(current_start) = current_query_start {
+                if i == current_start {
+                    // Skip to end of current query
+                    i += 1;
+                    while i < chars.len() && chars[i] != ' ' {
+                        i += 1;
+                    }
+                    continue;
+                }
+            }
+
+            // Extract path after @
+            i += 1; // Skip @
+            let start = i;
+
+            // Read until space or end
+            while i < chars.len() && chars[i] != ' ' && chars[i] != '@' {
+                i += 1;
+            }
+
+            if i > start {
+                let path: String = chars[start..i].iter().collect();
+                references.push(path);
+            }
+        } else {
+            i += 1;
+        }
+    }
+
+    references
 }
 
 #[cfg(test)]
@@ -231,59 +286,4 @@ mod tests {
             vec!["src/main.rs"] // Only @src/main.rs should be excluded
         );
     }
-}
-
-/// Extract all file references from input (excluding the current search query)
-///
-/// This function finds all @path references in the input except for the one currently being typed
-pub fn extract_existing_file_references(input: &str, cursor_pos: usize) -> Vec<String> {
-    let mut references = Vec::new();
-
-    // Get the current search query position to exclude it
-    let current_query_start = if let Some(_query) = extract_search_query(input, cursor_pos) {
-        // Find the @ position for current query
-        let safe_cursor_pos = cursor_pos.min(input.len());
-        let before_cursor = &input[..safe_cursor_pos];
-        before_cursor.rfind('@')
-    } else {
-        None
-    };
-
-    // Simple pattern matching for @path (avoiding regex dependency for now)
-    let chars: Vec<char> = input.chars().collect();
-    let mut i = 0;
-
-    while i < chars.len() {
-        if chars[i] == '@' {
-            // Skip the current search query being typed
-            if let Some(current_start) = current_query_start {
-                if i == current_start {
-                    // Skip to end of current query
-                    i += 1;
-                    while i < chars.len() && chars[i] != ' ' {
-                        i += 1;
-                    }
-                    continue;
-                }
-            }
-
-            // Extract path after @
-            i += 1; // Skip @
-            let start = i;
-
-            // Read until space or end
-            while i < chars.len() && chars[i] != ' ' && chars[i] != '@' {
-                i += 1;
-            }
-
-            if i > start {
-                let path: String = chars[start..i].iter().collect();
-                references.push(path);
-            }
-        } else {
-            i += 1;
-        }
-    }
-
-    references
 }

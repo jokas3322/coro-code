@@ -74,7 +74,7 @@ impl McpServer {
     /// Stop the MCP server
     pub fn stop(&mut self) {
         if let Some(mut process) = self.process.take() {
-            let _ = process.kill();
+            std::mem::drop(process.kill());
         }
         self.started = false;
     }

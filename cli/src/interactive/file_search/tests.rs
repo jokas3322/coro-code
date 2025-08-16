@@ -1,7 +1,7 @@
 //! Tests for the file search system
 
 #[cfg(test)]
-mod tests {
+mod integration_tests {
     use super::super::{FileSearchSystem, SearchConfig};
     use std::fs;
     use std::path::PathBuf;

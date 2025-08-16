@@ -12,7 +12,7 @@ use anyhow::Result;
 use coro_core::ResolvedLlmConfig;
 use iocraft::prelude::*;
 use regex::Regex;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::sync::broadcast;
 
 /// Represents a file reference found in user input
@@ -29,7 +29,7 @@ struct FileReference {
 }
 
 /// Parse file references from user input
-fn parse_file_references(input: &str, project_path: &PathBuf) -> Vec<FileReference> {
+fn parse_file_references(input: &str, project_path: &Path) -> Vec<FileReference> {
     let mut references = Vec::new();
 
     // Regex to match @path patterns
@@ -194,7 +194,7 @@ async fn read_directory_metadata(dir_path: &PathBuf) -> Result<String> {
 /// Process user input with file references and return enhanced input for AI
 async fn process_input_with_file_references(
     input: String,
-    project_path: &PathBuf,
+    project_path: &Path,
     _ui_sender: &broadcast::Sender<AppMessage>,
 ) -> Result<(String, Vec<String>)> {
     let file_refs = parse_file_references(&input, project_path);

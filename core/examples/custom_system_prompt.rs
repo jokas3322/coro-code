@@ -16,13 +16,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Method 1: Set system prompt through AgentConfig
     println!("1. Setting system prompt through AgentConfig:");
-    let mut agent_config = AgentConfig::default();
-    agent_config.system_prompt = Some(
-        "You are a specialized Rust programming assistant. \
-         Focus on writing safe, efficient, and idiomatic Rust code. \
-         Always explain memory safety considerations."
-            .to_string(),
-    );
+    let agent_config = AgentConfig {
+        system_prompt: Some(
+            "You are a specialized Rust programming assistant. \
+             Focus on writing safe, efficient, and idiomatic Rust code. \
+             Always explain memory safety considerations."
+                .to_string(),
+        ),
+        ..Default::default()
+    };
 
     // Create LLM configuration
     let llm_config = ResolvedLlmConfig::new(

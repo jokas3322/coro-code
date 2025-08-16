@@ -98,9 +98,9 @@ impl OpenAiClient {
                                     ),
                                     name: None,
                                     tool_calls: None,
-                                    function_call: None,
                                     audio: None,
                                     refusal: None,
+                                    ..Default::default()
                                 },
                             ));
                         }
@@ -145,9 +145,9 @@ impl OpenAiClient {
                                     } else {
                                         Some(tool_calls)
                                     },
-                                    function_call: None,
                                     audio: None,
                                     refusal: None,
+                                    ..Default::default()
                                 },
                             ));
                         }
@@ -479,7 +479,7 @@ impl OpenAiClient {
                 c.delta.tool_calls.as_ref().map(|tool_calls| {
                     tool_calls
                         .iter()
-                        .filter_map(|tool_call| {
+                        .map(|tool_call| {
                             // For streaming, we need to handle partial tool calls
                             // Don't try to parse JSON here, just pass the raw data
                             let id = tool_call.id.as_deref().unwrap_or("").to_string();
@@ -497,12 +497,12 @@ impl OpenAiClient {
                                 .to_string();
 
                             // Return raw tool call data for accumulation
-                            Some(ToolCall {
+                            ToolCall {
                                 id,
                                 name,
                                 parameters: Value::String(arguments),
                                 metadata: None,
-                            })
+                            }
                         })
                         .collect::<Vec<_>>()
                 })

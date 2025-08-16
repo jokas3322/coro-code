@@ -6,7 +6,7 @@ use super::*;
 use std::time::Instant;
 
 #[cfg(test)]
-mod benchmarks {
+mod performance_tests {
     use super::*;
     use tempfile;
 

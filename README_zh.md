@@ -167,6 +167,42 @@ export CORO_MODEL="custom-model"
 
 </details>
 
+## 🛠️ 开发
+
+### Pre-commit Hooks
+
+我们强烈建议设置 pre-commit hooks 来维护代码质量。仓库包含了自动安装 hooks 的脚本，这些 hooks 会在每次提交前运行格式化、代码检查和测试。
+
+根据你的平台选择合适的脚本：
+
+```bash
+# Linux/macOS
+./scripts/setup-pre-commit-hooks.sh
+
+# Windows PowerShell
+.\scripts\setup-pre-commit-hooks.ps1
+
+# Windows 命令提示符
+scripts\setup-pre-commit-hooks.bat
+```
+
+Pre-commit hook 会自动运行：
+
+- **代码格式化** (`cargo fmt --check`)
+- **代码检查** (`cargo clippy`)
+- **测试** (`cargo test`)
+
+更多详情请参见 [scripts/README.md](scripts/README.md)。
+
+### 贡献代码
+
+1. Fork 仓库
+2. 创建功能分支
+3. **设置 pre-commit hooks**（推荐）
+4. 进行修改
+5. 确保所有测试通过
+6. 提交 Pull Request
+
 ## 📄 许可证
 
 双许可证，任选其一：

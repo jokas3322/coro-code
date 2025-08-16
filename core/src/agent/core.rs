@@ -12,7 +12,6 @@ use crate::output::{
 use crate::tools::{ToolExecutor, ToolRegistry};
 use crate::trajectory::{TrajectoryEntry, TrajectoryRecorder};
 use async_trait::async_trait;
-use futures::StreamExt;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
@@ -663,8 +662,10 @@ mod tests {
     #[test]
     fn test_system_prompt_configuration() {
         // Test AgentConfig with custom system prompt
-        let mut agent_config = AgentConfig::default();
-        agent_config.system_prompt = Some("Custom system prompt for testing".to_string());
+        let agent_config = AgentConfig {
+            system_prompt: Some("Custom system prompt for testing".to_string()),
+            ..Default::default()
+        };
 
         assert_eq!(
             agent_config.system_prompt,
@@ -679,8 +680,10 @@ mod tests {
     #[test]
     fn test_system_prompt_serialization() {
         // Test that AgentConfig with system_prompt can be serialized/deserialized
-        let mut config = AgentConfig::default();
-        config.system_prompt = Some("Custom prompt".to_string());
+        let config = AgentConfig {
+            system_prompt: Some("Custom prompt".to_string()),
+            ..Default::default()
+        };
 
         let json = serde_json::to_string(&config).unwrap();
         let deserialized: AgentConfig = serde_json::from_str(&json).unwrap();
@@ -706,8 +709,10 @@ mod tests {
         use std::path::PathBuf;
 
         // Create a mock agent with custom system prompt
-        let mut agent_config = AgentConfig::default();
-        agent_config.system_prompt = Some("You are a general purpose AI assistant.".to_string());
+        let agent_config = AgentConfig {
+            system_prompt: Some("You are a general purpose AI assistant.".to_string()),
+            ..Default::default()
+        };
 
         // Create minimal components for testing
         let tool_registry = ToolRegistry::default();

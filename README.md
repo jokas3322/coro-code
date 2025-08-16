@@ -181,6 +181,42 @@ coro --config custom.json "Analyze this codebase"
 
 </details>
 
+## 🛠️ Development
+
+### Pre-commit Hooks
+
+We strongly recommend setting up pre-commit hooks to maintain code quality. The repository includes scripts to automatically install hooks that run formatting, linting, and tests before each commit.
+
+Choose the appropriate script for your platform:
+
+```bash
+# Linux/macOS
+./scripts/setup-pre-commit-hooks.sh
+
+# Windows PowerShell
+.\scripts\setup-pre-commit-hooks.ps1
+
+# Windows Command Prompt
+scripts\setup-pre-commit-hooks.bat
+```
+
+The pre-commit hook will automatically run:
+
+- **Code formatting** (`cargo fmt --check`)
+- **Linting** (`cargo clippy`)
+- **Tests** (`cargo test`)
+
+For more details, see [scripts/README.md](scripts/README.md).
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. **Set up pre-commit hooks** (recommended)
+4. Make your changes
+5. Ensure all tests pass
+6. Submit a pull request
+
 ## 📄 License
 
 Dual licensed under your choice of:

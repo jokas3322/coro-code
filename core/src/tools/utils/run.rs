@@ -351,8 +351,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_command_timeout() {
-        let mut options = CommandOptions::default();
-        options.timeout_seconds = Some(1);
+        let options = CommandOptions {
+            timeout_seconds: Some(1),
+            ..Default::default()
+        };
 
         let result = execute_command("sleep 5", options).await.unwrap();
 

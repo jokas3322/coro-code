@@ -124,7 +124,7 @@ impl AgentOutput for CliOutputHandler {
                 active_tools.insert(tool_info.execution_id.clone(), tool_info);
             }
 
-            AgentEvent::ToolExecutionUpdated { tool_info } => {
+            AgentEvent::ToolExecutionUpdated { tool_info: _ } => {
                 // ...
             }
 

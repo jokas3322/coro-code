@@ -150,16 +150,16 @@ async fn main() -> Result<()> {
     match (cli.task, cli.command) {
         // If task is provided, run in single-task mode
         (Some(task), None) => {
-            run_command(
+            run_command(commands::run::RunConfig {
                 task,
                 config_loader,
-                cli.max_steps,
-                cli.trajectory_file,
-                cli.must_patch,
-                cli.patch_path,
-                cli.working_dir,
-                cli.debug_output,
-            )
+                max_steps: cli.max_steps,
+                trajectory_file: cli.trajectory_file,
+                must_patch: cli.must_patch,
+                patch_path: cli.patch_path,
+                working_dir: cli.working_dir,
+                debug_output: cli.debug_output,
+            })
             .await
         }
         // If task is provided with a subcommand, that's an error
