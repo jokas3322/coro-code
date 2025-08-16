@@ -57,7 +57,7 @@ pub fn build_system_context() -> String {
     let os_info = std::env::consts::OS;
     let arch_info = std::env::consts::ARCH;
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-    
+
     format!(
         "System Information:\n\
          - Operating System: {}\n\

@@ -1,5 +1,5 @@
 //! Text processing utilities for interactive mode
-//! 
+//!
 //! This module provides text wrapping, Unicode-aware width calculation,
 //! and other text processing utilities used by the interactive UI.
 

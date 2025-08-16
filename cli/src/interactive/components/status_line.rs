@@ -3,9 +3,7 @@
 //! This module provides the dynamic status line component that shows
 //! agent execution status, progress, and token usage.
 
-use crate::interactive::animation::{
-    apply_easing, UiAnimationConfig,
-};
+use crate::interactive::animation::{apply_easing, UiAnimationConfig};
 use crate::interactive::message_handler::AppMessage;
 use iocraft::prelude::*;
 use tokio::sync::broadcast;

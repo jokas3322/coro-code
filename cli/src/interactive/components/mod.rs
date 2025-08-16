@@ -5,4 +5,3 @@
 pub mod input_section;
 pub mod logo;
 pub mod status_line;
-

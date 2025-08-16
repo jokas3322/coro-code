@@ -1,8 +1,8 @@
 //! Task completion tool
 
 use crate::error::Result;
-use crate::tools::{ Tool, ToolCall, ToolExample, ToolResult };
 use crate::impl_tool_factory;
+use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use async_trait::async_trait;
 use serde_json::json;
 
@@ -53,15 +53,11 @@ impl Tool for TaskDoneTool {
             result.push_str(&format!("\n\nDetails:\n{}", details));
         }
 
-        Ok(
-            ToolResult::success(&call.id, &result).with_data(
-                json!({
+        Ok(ToolResult::success(&call.id, &result).with_data(json!({
             "task_completed": true,
             "summary": summary,
             "details": details
-        })
-            )
-        )
+        })))
     }
 
     fn examples(&self) -> Vec<ToolExample> {
@@ -80,7 +76,7 @@ impl Tool for TaskDoneTool {
                     "details": "Added validation, database schema, API endpoints, and tests"
                 }),
                 expected_result: "Task marked as completed with summary and details".to_string(),
-            }
+            },
         ]
     }
 }
@@ -91,4 +87,9 @@ impl Default for TaskDoneTool {
     }
 }
 
-impl_tool_factory!(TaskDoneToolFactory, TaskDoneTool, "task_done", "Mark a task as completed");
+impl_tool_factory!(
+    TaskDoneToolFactory,
+    TaskDoneTool,
+    "task_done",
+    "Mark a task as completed"
+);

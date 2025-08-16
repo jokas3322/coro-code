@@ -233,14 +233,23 @@ impl DiffFormatter {
 
         // Determine operation type and create appropriate diff
         if let Some(old_str) = tool_info.parameters.get("old_str").and_then(|v| v.as_str()) {
-            tool_info.parameters.get("new_str").and_then(|v| v.as_str()).map(|new_str| self.create_unified_diff_view(file_name, Some(old_str), Some(new_str)))
+            tool_info
+                .parameters
+                .get("new_str")
+                .and_then(|v| v.as_str())
+                .map(|new_str| {
+                    self.create_unified_diff_view(file_name, Some(old_str), Some(new_str))
+                })
         } else if let Some(new_str) = tool_info.parameters.get("new_str").and_then(|v| v.as_str()) {
             // insert operation
             Some(self.create_unified_diff_view(file_name, None, Some(new_str)))
-        } else { tool_info
-            .parameters
-            .get("file_text")
-            .and_then(|v| v.as_str()).map(|file_text| self.create_unified_diff_view(file_name, None, Some(file_text))) }
+        } else {
+            tool_info
+                .parameters
+                .get("file_text")
+                .and_then(|v| v.as_str())
+                .map(|file_text| self.create_unified_diff_view(file_name, None, Some(file_text)))
+        }
     }
 
     /// Create a unified diff view for all operations

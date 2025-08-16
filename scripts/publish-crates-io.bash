@@ -169,7 +169,8 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-members=$(echo "$metadata" | jq -r '.workspace_members[] | .name')
+# Extract package names from workspace_members
+members=$(echo "$metadata" | jq -r '.workspace_members[]' | sed 's/.*#\([^@]*\)@.*/\1/')
 if [ -z "$members" ]; then
   recho \
     "${RED}错误: 未找到工作区成员${NC}" \
@@ -218,12 +219,9 @@ trap 'rm -f "$temp_file"' EXIT
 
 # 解析依赖关系 | Parse dependencies
 while IFS= read -r member; do
-  member_path=$(echo "$metadata" | jq -r --arg name "$member" '.packages[] | select(.name == $name) | .manifest_path')
-  member_dir=$(dirname "$member_path")
-  
   # 获取直接依赖 | Get direct dependencies
-  deps=$(echo "$metadata" | jq -r --arg name "$member" '.packages[] | select(.name == $name) | .dependencies[].name' | grep -E "^coro-")
-  
+  deps=$(echo "$metadata" | jq -r --arg name "$member" '.packages[] | select(.name == $name) | .dependencies[] | select(.name | startswith("coro-")) | .name' | tr '\n' ' ')
+
   echo "$member:$deps" >> "$temp_file"
 done <<< "$members"
 

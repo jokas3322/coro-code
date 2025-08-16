@@ -45,7 +45,7 @@ pub struct CommandResult {
 /// Execute a command with comprehensive options
 pub async fn execute_command(command: &str, options: CommandOptions) -> Result<CommandResult> {
     let start_time = Instant::now();
-    
+
     let mut cmd = if let Some(shell) = &options.shell {
         let mut cmd = Command::new(shell);
         cmd.arg("-c").arg(command);
@@ -56,7 +56,7 @@ pub async fn execute_command(command: &str, options: CommandOptions) -> Result<C
         if parts.is_empty() {
             return Err("Empty command".into());
         }
-        
+
         let mut cmd = Command::new(parts[0]);
         if parts.len() > 1 {
             cmd.args(&parts[1..]);
@@ -75,9 +75,8 @@ pub async fn execute_command(command: &str, options: CommandOptions) -> Result<C
     }
 
     // Configure stdio
-    cmd.stdin(Stdio::piped())
-       .stdout(Stdio::piped());
-    
+    cmd.stdin(Stdio::piped()).stdout(Stdio::piped());
+
     if options.capture_stderr {
         cmd.stderr(Stdio::piped());
     } else {
@@ -85,21 +84,22 @@ pub async fn execute_command(command: &str, options: CommandOptions) -> Result<C
     }
 
     let mut child = cmd.spawn()?;
-    
+
     // Execute with timeout
     let timeout_duration = Duration::from_secs(options.timeout_seconds.unwrap_or(120));
     let result = timeout(timeout_duration, async {
         execute_child(&mut child, options.capture_stderr).await
-    }).await;
+    })
+    .await;
 
     let duration = start_time.elapsed();
-    
+
     match result {
         Ok(Ok((exit_code, stdout, stderr))) => {
             let truncate_limit = options.truncate_after.unwrap_or(16000);
             let (stdout_truncated, stdout_final) = truncate_output(&stdout, truncate_limit);
             let (stderr_truncated, stderr_final) = truncate_output(&stderr, truncate_limit);
-            
+
             Ok(CommandResult {
                 exit_code,
                 stdout: stdout_final,
@@ -113,11 +113,14 @@ pub async fn execute_command(command: &str, options: CommandOptions) -> Result<C
         Err(_) => {
             // Kill the process if it's still running
             let _ = child.kill().await;
-            
+
             Ok(CommandResult {
                 exit_code: -1,
                 stdout: String::new(),
-                stderr: format!("Command timed out after {} seconds", timeout_duration.as_secs()),
+                stderr: format!(
+                    "Command timed out after {} seconds",
+                    timeout_duration.as_secs()
+                ),
                 duration_ms: duration.as_millis() as u64,
                 timed_out: true,
                 truncated: false,
@@ -200,7 +203,7 @@ pub async fn stream_command(
     mut output_handler: impl FnMut(&str) -> Result<()>,
 ) -> Result<CommandResult> {
     let start_time = Instant::now();
-    
+
     let mut cmd = if let Some(shell) = &options.shell {
         let mut cmd = Command::new(shell);
         cmd.arg("-c").arg(command);
@@ -210,7 +213,7 @@ pub async fn stream_command(
         if parts.is_empty() {
             return Err("Empty command".into());
         }
-        
+
         let mut cmd = Command::new(parts[0]);
         if parts.len() > 1 {
             cmd.args(&parts[1..]);
@@ -227,17 +230,17 @@ pub async fn stream_command(
     }
 
     cmd.stdin(Stdio::piped())
-       .stdout(Stdio::piped())
-       .stderr(Stdio::piped());
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
 
     let mut child = cmd.spawn()?;
-    
+
     let stdout = child.stdout.take().ok_or("Failed to capture stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to capture stderr")?;
 
     let mut stdout_reader = BufReader::new(stdout);
     let mut stderr_reader = BufReader::new(stderr);
-    
+
     let mut all_output = String::new();
     let mut exit_code = 0;
     let mut timed_out = false;
@@ -279,12 +282,13 @@ pub async fn stream_command(
         }
 
         Ok::<(), crate::error::Error>(())
-    }).await;
+    })
+    .await;
 
     let duration = start_time.elapsed();
 
     match result {
-        Ok(Ok(())) => {},
+        Ok(Ok(())) => {}
         Ok(Err(e)) => return Err(e),
         Err(_) => {
             let _ = child.kill().await;
@@ -310,7 +314,7 @@ pub async fn stream_command(
 pub fn validate_command_safety(command: &str) -> Result<()> {
     let dangerous_patterns = [
         "rm -rf /",
-        ":(){ :|:& };:",  // Fork bomb
+        ":(){ :|:& };:", // Fork bomb
         "dd if=/dev/zero",
         "mkfs.",
         "format ",
@@ -336,8 +340,10 @@ mod tests {
     #[tokio::test]
     async fn test_simple_command() {
         let options = CommandOptions::default();
-        let result = execute_command("echo 'Hello, World!'", options).await.unwrap();
-        
+        let result = execute_command("echo 'Hello, World!'", options)
+            .await
+            .unwrap();
+
         assert_eq!(result.exit_code, 0);
         assert!(result.stdout.contains("Hello, World!"));
         assert!(!result.timed_out);
@@ -347,9 +353,9 @@ mod tests {
     async fn test_command_timeout() {
         let mut options = CommandOptions::default();
         options.timeout_seconds = Some(1);
-        
+
         let result = execute_command("sleep 5", options).await.unwrap();
-        
+
         assert!(result.timed_out);
         assert_eq!(result.exit_code, -1);
     }
@@ -358,7 +364,7 @@ mod tests {
     fn test_output_truncation() {
         let long_output = "a".repeat(20000);
         let (truncated, output) = truncate_output(&long_output, 1000);
-        
+
         assert!(truncated);
         assert!(output.len() > 1000); // Includes truncation message
         assert!(output.contains("output truncated"));

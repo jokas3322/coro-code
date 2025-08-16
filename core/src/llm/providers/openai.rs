@@ -283,10 +283,7 @@ impl LlmClient for OpenAiClient {
                         .filter(|block| matches!(block, ContentBlock::ToolUse { .. }))
                         .count();
                     if tool_use_count > 0 {
-                        tracing::debug!(
-                            "OpenAI response contains {} tool calls",
-                            tool_use_count
-                        );
+                        tracing::debug!("OpenAI response contains {} tool calls", tool_use_count);
                         // Log tool call details
                         for block in blocks {
                             if let ContentBlock::ToolUse { id, name, .. } = block {

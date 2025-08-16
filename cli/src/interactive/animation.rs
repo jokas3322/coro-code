@@ -1,5 +1,5 @@
 //! Animation system for interactive UI
-//! 
+//!
 //! This module provides animation configuration, easing functions,
 //! and animation utilities for the interactive user interface.
 
@@ -49,12 +49,12 @@ impl UiAnimationConfig {
                 _ => None,
             })
             .unwrap_or(Easing::EaseOutCubic);
-        
+
         let frame_interval_ms = std::env::var("TRAE_UI_FRAME_MS")
             .ok()
             .and_then(|v| v.parse::<u64>().ok())
             .unwrap_or(10);
-        
+
         let duration_ms = std::env::var("TRAE_UI_DURATION_MS")
             .ok()
             .and_then(|v| v.parse::<u64>().ok())
@@ -112,7 +112,7 @@ impl TokenAnimation {
         let progress = elapsed.as_secs_f64() / self.duration.as_secs_f64();
         let eased_progress = apply_easing(easing, progress);
         let new_tokens = ((self.target_tokens as f64) * eased_progress) as u32;
-        
+
         self.current_tokens = new_tokens.min(self.target_tokens);
         self.current_tokens
     }
@@ -184,7 +184,7 @@ mod tests {
     fn test_token_animation() {
         let mut anim = TokenAnimation::new(100, std::time::Duration::from_millis(1000));
         assert_eq!(anim.current_tokens, 0);
-        
+
         // Should animate towards target
         let updated = anim.update(Easing::Linear);
         assert!(updated <= 100);

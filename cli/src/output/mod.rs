@@ -6,4 +6,3 @@
 pub mod cli_handler;
 pub mod formatters;
 pub mod interactive_handler;
-

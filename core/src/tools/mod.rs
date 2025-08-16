@@ -1,10 +1,10 @@
 //! Tool system and built-in tools
 
 pub mod base;
-pub mod registry;
 pub mod builtin;
-pub mod utils;
 pub mod output_formatter;
+pub mod registry;
+pub mod utils;
 
-pub use base::{Tool, ToolCall, ToolResult, ToolExecutor, ToolExample};
-pub use registry::{ToolRegistry, ToolFactory};
+pub use base::{Tool, ToolCall, ToolExample, ToolExecutor, ToolResult};
+pub use registry::{ToolFactory, ToolRegistry};

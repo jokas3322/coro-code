@@ -1,16 +1,16 @@
 //! MCP (Model Context Protocol) tool support
 
 use crate::error::Result;
-use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use crate::impl_tool_factory;
+use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
+use tokio::sync::Mutex;
 use tokio::time::{timeout, Duration};
 
 /// MCP server configuration
@@ -59,8 +59,8 @@ impl McpServer {
         }
 
         cmd.stdin(Stdio::piped())
-           .stdout(Stdio::piped())
-           .stderr(Stdio::piped());
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
 
         self.process = Some(cmd.spawn()?);
         self.started = true;
@@ -115,7 +115,7 @@ impl McpServer {
         }
 
         let process = self.process.as_mut().unwrap();
-        
+
         // Send request
         if let Some(stdin) = process.stdin.as_mut() {
             let request_str = serde_json::to_string(&request)?;
@@ -129,8 +129,9 @@ impl McpServer {
         // Read response with timeout
         let response = timeout(
             Duration::from_secs(self.config.timeout_seconds),
-            self.read_response()
-        ).await??;
+            self.read_response(),
+        )
+        .await??;
 
         Ok(response)
     }
@@ -142,7 +143,7 @@ impl McpServer {
                 let mut reader = BufReader::new(stdout);
                 let mut line = String::new();
                 reader.read_line(&mut line).await?;
-                
+
                 if line.trim().is_empty() {
                     return Err("Empty response from MCP server".into());
                 }
@@ -166,7 +167,7 @@ impl McpServer {
         });
 
         let response = self.send_request(request).await?;
-        
+
         if let Some(result) = response.get("result") {
             if let Some(tools) = result.get("tools") {
                 if let Some(tools_array) = tools.as_array() {
@@ -191,7 +192,7 @@ impl McpServer {
         });
 
         let response = self.send_request(request).await?;
-        
+
         if let Some(error) = response.get("error") {
             return Err(format!("MCP tool error: {}", error).into());
         }
@@ -228,7 +229,7 @@ impl Tool for McpTool {
     fn name(&self) -> &str {
         "mcp_tool"
     }
-    
+
     fn description(&self) -> &str {
         "Tool for interacting with MCP (Model Context Protocol) servers\n\
          * Manages connections to external MCP servers\n\
@@ -247,7 +248,7 @@ impl Tool for McpTool {
          through the Model Context Protocol. This allows integration with\n\
          various external systems and services."
     }
-    
+
     fn parameters_schema(&self) -> serde_json::Value {
         json!({
             "type": "object",
@@ -291,10 +292,10 @@ impl Tool for McpTool {
             "required": ["operation"]
         })
     }
-    
+
     async fn execute(&self, call: ToolCall) -> Result<ToolResult> {
         let operation: String = call.get_parameter("operation")?;
-        
+
         match operation.as_str() {
             "start_server" => {
                 let server_name: String = call.get_parameter("server_name")?;
@@ -302,7 +303,6 @@ impl Tool for McpTool {
                 let args: Vec<String> = call.get_parameter_or("args", Vec::new());
                 let env: HashMap<String, String> = call.get_parameter_or("env", HashMap::new());
                 let timeout_seconds: u64 = call.get_parameter_or("timeout_seconds", 30);
-                
                 self.start_server(&call.id, server_name, command, args, env, timeout_seconds).await
             }
             "stop_server" => {
@@ -320,7 +320,6 @@ impl Tool for McpTool {
                 let server_name: String = call.get_parameter("server_name")?;
                 let tool_name: String = call.get_parameter("tool_name")?;
                 let tool_arguments: Value = call.get_parameter("tool_arguments")?;
-                
                 self.call_tool(&call.id, server_name, tool_name, tool_arguments).await
             }
             _ => Ok(ToolResult::error(&call.id, &format!(
@@ -329,7 +328,7 @@ impl Tool for McpTool {
             ))),
         }
     }
-    
+
     fn examples(&self) -> Vec<ToolExample> {
         vec![
             ToolExample {
@@ -395,15 +394,15 @@ impl McpTool {
                 let mut servers = self.servers.lock().await;
                 servers.insert(server_name.clone(), server);
 
-                Ok(ToolResult::success(call_id, &format!(
-                    "MCP server '{}' started successfully", server_name
-                )))
+                Ok(ToolResult::success(
+                    call_id,
+                    &format!("MCP server '{}' started successfully", server_name),
+                ))
             }
-            Err(e) => {
-                Ok(ToolResult::error(call_id, &format!(
-                    "Failed to start MCP server '{}': {}", server_name, e
-                )))
-            }
+            Err(e) => Ok(ToolResult::error(
+                call_id,
+                &format!("Failed to start MCP server '{}': {}", server_name, e),
+            )),
         }
     }
 
@@ -413,13 +412,15 @@ impl McpTool {
 
         if let Some(mut server) = servers.remove(&server_name) {
             server.stop();
-            Ok(ToolResult::success(call_id, &format!(
-                "MCP server '{}' stopped successfully", server_name
-            )))
+            Ok(ToolResult::success(
+                call_id,
+                &format!("MCP server '{}' stopped successfully", server_name),
+            ))
         } else {
-            Ok(ToolResult::error(call_id, &format!(
-                "MCP server '{}' not found", server_name
-            )))
+            Ok(ToolResult::error(
+                call_id,
+                &format!("MCP server '{}' not found", server_name),
+            ))
         }
     }
 
@@ -428,16 +429,17 @@ impl McpTool {
         let servers = self.servers.lock().await;
 
         if servers.is_empty() {
-            return Ok(ToolResult::success(call_id, "No MCP servers are currently running"));
+            return Ok(ToolResult::success(
+                call_id,
+                "No MCP servers are currently running",
+            ));
         }
 
         let mut result = String::from("Running MCP servers:\n\n");
         for (name, server) in servers.iter() {
             result.push_str(&format!(
                 "- {} (command: {:?}, started: {})\n",
-                name,
-                server.config.command,
-                server.started
+                name, server.config.command, server.started
             ));
         }
 
@@ -452,24 +454,31 @@ impl McpTool {
             match server.list_tools().await {
                 Ok(tools) => {
                     if tools.is_empty() {
-                        Ok(ToolResult::success(call_id, &format!(
-                            "No tools available from MCP server '{}'", server_name
-                        )))
+                        Ok(ToolResult::success(
+                            call_id,
+                            &format!("No tools available from MCP server '{}'", server_name),
+                        ))
                     } else {
-                        let mut result = format!("Tools available from MCP server '{}':\n\n", server_name);
+                        let mut result =
+                            format!("Tools available from MCP server '{}':\n\n", server_name);
 
                         for (i, tool) in tools.iter().enumerate() {
                             if let Some(name) = tool.get("name").and_then(|n| n.as_str()) {
                                 result.push_str(&format!("{}. {}", i + 1, name));
 
-                                if let Some(description) = tool.get("description").and_then(|d| d.as_str()) {
+                                if let Some(description) =
+                                    tool.get("description").and_then(|d| d.as_str())
+                                {
                                     result.push_str(&format!(" - {}", description));
                                 }
                                 result.push('\n');
 
                                 if let Some(input_schema) = tool.get("inputSchema") {
-                                    result.push_str(&format!("   Input schema: {}\n",
-                                        serde_json::to_string_pretty(input_schema).unwrap_or_default()));
+                                    result.push_str(&format!(
+                                        "   Input schema: {}\n",
+                                        serde_json::to_string_pretty(input_schema)
+                                            .unwrap_or_default()
+                                    ));
                                 }
                                 result.push('\n');
                             }
@@ -478,16 +487,19 @@ impl McpTool {
                         Ok(ToolResult::success(call_id, &result))
                     }
                 }
-                Err(e) => {
-                    Ok(ToolResult::error(call_id, &format!(
-                        "Failed to list tools from MCP server '{}': {}", server_name, e
-                    )))
-                }
+                Err(e) => Ok(ToolResult::error(
+                    call_id,
+                    &format!(
+                        "Failed to list tools from MCP server '{}': {}",
+                        server_name, e
+                    ),
+                )),
             }
         } else {
-            Ok(ToolResult::error(call_id, &format!(
-                "MCP server '{}' not found", server_name
-            )))
+            Ok(ToolResult::error(
+                call_id,
+                &format!("MCP server '{}' not found", server_name),
+            ))
         }
     }
 
@@ -510,24 +522,34 @@ impl McpTool {
                         serde_json::to_string_pretty(&result).unwrap_or_default()
                     };
 
-                    Ok(ToolResult::success(call_id, &format!(
-                        "Tool '{}' executed successfully on MCP server '{}':\n\n{}",
-                        tool_name, server_name, result_str
-                    )))
+                    Ok(ToolResult::success(
+                        call_id,
+                        &format!(
+                            "Tool '{}' executed successfully on MCP server '{}':\n\n{}",
+                            tool_name, server_name, result_str
+                        ),
+                    ))
                 }
-                Err(e) => {
-                    Ok(ToolResult::error(call_id, &format!(
+                Err(e) => Ok(ToolResult::error(
+                    call_id,
+                    &format!(
                         "Failed to call tool '{}' on MCP server '{}': {}",
                         tool_name, server_name, e
-                    )))
-                }
+                    ),
+                )),
             }
         } else {
-            Ok(ToolResult::error(call_id, &format!(
-                "MCP server '{}' not found", server_name
-            )))
+            Ok(ToolResult::error(
+                call_id,
+                &format!("MCP server '{}' not found", server_name),
+            ))
         }
     }
 }
 
-impl_tool_factory!(McpToolFactory, McpTool, "mcp_tool", "Tool for interacting with MCP (Model Context Protocol) servers");
+impl_tool_factory!(
+    McpToolFactory,
+    McpTool,
+    "mcp_tool",
+    "Tool for interacting with MCP (Model Context Protocol) servers"
+);

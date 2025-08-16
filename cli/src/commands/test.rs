@@ -36,8 +36,6 @@ pub async fn test_command() -> Result<()> {
 }
 
 async fn test_config() -> Result<()> {
-    
-
     // Test creating a basic LLM configuration
     let llm_config = coro_core::ResolvedLlmConfig::new(
         coro_core::Protocol::OpenAICompat,

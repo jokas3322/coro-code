@@ -1,9 +1,9 @@
 //! LLM client trait and response structures
 
-use crate::error::{ LlmError, Result };
+use crate::error::{LlmError, Result};
 use crate::tools::ToolCall;
 use async_trait::async_trait;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use super::message::LlmMessage;
@@ -16,7 +16,7 @@ pub trait LlmClient: Send + Sync {
         &self,
         messages: Vec<LlmMessage>,
         tools: Option<Vec<ToolDefinition>>,
-        options: Option<ChatOptions>
+        options: Option<ChatOptions>,
     ) -> Result<LlmResponse>;
 
     /// Get the model name
@@ -35,13 +35,12 @@ pub trait LlmClient: Send + Sync {
         &self,
         _messages: Vec<LlmMessage>,
         _tools: Option<Vec<ToolDefinition>>,
-        _options: Option<ChatOptions>
+        _options: Option<ChatOptions>,
     ) -> Result<Box<dyn futures::Stream<Item = Result<LlmStreamChunk>> + Send + Unpin + '_>> {
-        Err(
-            (LlmError::InvalidRequest {
-                message: "Streaming not supported by this client".to_string(),
-            }).into()
-        )
+        Err((LlmError::InvalidRequest {
+            message: "Streaming not supported by this client".to_string(),
+        })
+        .into())
     }
 }
 
@@ -173,9 +172,7 @@ pub enum ToolChoice {
     None,
 
     /// Force use of a specific tool
-    Required {
-        name: String,
-    },
+    Required { name: String },
 }
 
 impl Default for ChatOptions {

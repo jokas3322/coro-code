@@ -1,8 +1,8 @@
 //! Sequential thinking tool
 
 use crate::error::Result;
-use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use crate::impl_tool_factory;
+use crate::tools::{Tool, ToolCall, ToolExample, ToolResult};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -148,11 +148,14 @@ impl Tool for ThinkingTool {
                     "error": e.to_string(),
                     "status": "failed"
                 });
-                Ok(ToolResult::error(&call.id, &format!(
-                    "Sequential thinking failed: {}\n\nDetails:\n{}",
-                    e,
-                    serde_json::to_string_pretty(&error_data).unwrap_or_default()
-                )))
+                Ok(ToolResult::error(
+                    &call.id,
+                    &format!(
+                        "Sequential thinking failed: {}\n\nDetails:\n{}",
+                        e,
+                        serde_json::to_string_pretty(&error_data).unwrap_or_default()
+                    ),
+                ))
             }
         }
     }
@@ -200,16 +203,20 @@ impl Tool for ThinkingTool {
 impl ThinkingTool {
     /// Validate input arguments and create ThoughtData
     fn validate_and_process_thought(&self, call: &ToolCall) -> Result<ThoughtData> {
-        let thought: String = call.get_parameter("thought")
+        let thought: String = call
+            .get_parameter("thought")
             .map_err(|_| "Invalid thought: must be a string")?;
 
-        let thought_number: i32 = call.get_parameter("thought_number")
+        let thought_number: i32 = call
+            .get_parameter("thought_number")
             .map_err(|_| "Invalid thought_number: must be a number")?;
 
-        let total_thoughts: i32 = call.get_parameter("total_thoughts")
+        let total_thoughts: i32 = call
+            .get_parameter("total_thoughts")
             .map_err(|_| "Invalid total_thoughts: must be a number")?;
 
-        let next_thought_needed: bool = call.get_parameter("next_thought_needed")
+        let next_thought_needed: bool = call
+            .get_parameter("next_thought_needed")
             .map_err(|_| "Invalid next_thought_needed: must be a boolean")?;
 
         // Validate minimum values
@@ -223,9 +230,13 @@ impl ThinkingTool {
 
         // Handle optional fields
         let is_revision: Option<bool> = call.get_parameter("is_revision").ok();
-        let revises_thought: Option<i32> = call.get_parameter("revises_thought").ok()
+        let revises_thought: Option<i32> = call
+            .get_parameter("revises_thought")
+            .ok()
             .and_then(|v: i32| if v > 0 { Some(v) } else { None });
-        let branch_from_thought: Option<i32> = call.get_parameter("branch_from_thought").ok()
+        let branch_from_thought: Option<i32> = call
+            .get_parameter("branch_from_thought")
+            .ok()
             .and_then(|v: i32| if v > 0 { Some(v) } else { None });
         let branch_id: Option<String> = call.get_parameter("branch_id").ok();
         let needs_more_thoughts: Option<bool> = call.get_parameter("needs_more_thoughts").ok();
@@ -272,9 +283,12 @@ impl ThinkingTool {
 
     /// Handle branching logic
     fn handle_branching(&self, thought_data: &ThoughtData) {
-        if let (Some(_branch_from), Some(branch_id)) = (&thought_data.branch_from_thought, &thought_data.branch_id) {
+        if let (Some(_branch_from), Some(branch_id)) =
+            (&thought_data.branch_from_thought, &thought_data.branch_id)
+        {
             if let Ok(mut branches) = self.branches.lock() {
-                branches.entry(branch_id.clone())
+                branches
+                    .entry(branch_id.clone())
                     .or_insert_with(Vec::new)
                     .push(thought_data.clone());
             }
@@ -329,7 +343,10 @@ impl ThinkingTool {
             context = String::new();
         }
 
-        let header = format!("{} {}/{}{}", prefix, thought_data.thought_number, thought_data.total_thoughts, context);
+        let header = format!(
+            "{} {}/{}{}",
+            prefix, thought_data.thought_number, thought_data.total_thoughts, context
+        );
         let border_length = std::cmp::max(header.len(), thought_data.thought.len()) + 4;
         let border = "─".repeat(border_length);
 

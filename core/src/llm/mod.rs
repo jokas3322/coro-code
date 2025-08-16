@@ -5,8 +5,8 @@ pub mod message;
 pub mod providers;
 
 pub use client::{
-    LlmClient, LlmResponse, LlmStreamChunk, ChatOptions, FinishReason,
-    Usage, ToolDefinition, FunctionDefinition, ToolChoice
+    ChatOptions, FinishReason, FunctionDefinition, LlmClient, LlmResponse, LlmStreamChunk,
+    ToolChoice, ToolDefinition, Usage,
 };
-pub use message::{LlmMessage, MessageRole, MessageContent, ContentBlock};
+pub use message::{ContentBlock, LlmMessage, MessageContent, MessageRole};
 pub use providers::*;

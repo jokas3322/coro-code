@@ -11,21 +11,21 @@ use uuid::Uuid;
 pub trait Tool: Send + Sync {
     /// Get the name of the tool
     fn name(&self) -> &str;
-    
+
     /// Get the description of the tool
     fn description(&self) -> &str;
-    
+
     /// Get the JSON schema for the tool's parameters
     fn parameters_schema(&self) -> serde_json::Value;
-    
+
     /// Execute the tool with the given parameters
     async fn execute(&self, call: ToolCall) -> Result<ToolResult>;
-    
+
     /// Check if the tool requires special permissions
     fn requires_confirmation(&self) -> bool {
         false
     }
-    
+
     /// Get examples of how to use this tool
     fn examples(&self) -> Vec<ToolExample> {
         Vec::new()
@@ -37,13 +37,13 @@ pub trait Tool: Send + Sync {
 pub struct ToolCall {
     /// Unique identifier for this tool call
     pub id: String,
-    
+
     /// Name of the tool to call
     pub name: String,
-    
+
     /// Parameters to pass to the tool
     pub parameters: serde_json::Value,
-    
+
     /// Optional metadata
     pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
@@ -53,19 +53,19 @@ pub struct ToolCall {
 pub struct ToolResult {
     /// ID of the tool call this is a result for
     pub tool_call_id: String,
-    
+
     /// Whether the execution was successful
     pub success: bool,
-    
+
     /// Result content
     pub content: String,
-    
+
     /// Optional structured data
     pub data: Option<serde_json::Value>,
-    
+
     /// Execution duration in milliseconds
     pub duration_ms: Option<u64>,
-    
+
     /// Optional metadata
     pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
@@ -75,10 +75,10 @@ pub struct ToolResult {
 pub struct ToolExample {
     /// Description of what this example does
     pub description: String,
-    
+
     /// Example parameters
     pub parameters: serde_json::Value,
-    
+
     /// Expected result description
     pub expected_result: String,
 }
@@ -98,24 +98,27 @@ impl ToolCall {
             metadata: None,
         }
     }
-    
+
     /// Get a parameter value by key
     pub fn get_parameter<T>(&self, key: &str) -> Result<T>
     where
         T: for<'de> Deserialize<'de>,
     {
-        let value = self.parameters
+        let value = self
+            .parameters
             .get(key)
             .ok_or_else(|| ToolError::InvalidParameters {
                 message: format!("Missing parameter: {}", key),
             })?;
 
-        serde_json::from_value(value.clone())
-            .map_err(|_| ToolError::InvalidParameters {
+        serde_json::from_value(value.clone()).map_err(|_| {
+            ToolError::InvalidParameters {
                 message: format!("Invalid parameter type for: {}", key),
-            }.into())
+            }
+            .into()
+        })
     }
-    
+
     /// Get a parameter value by key with a default
     pub fn get_parameter_or<T>(&self, key: &str, default: T) -> T
     where
@@ -137,7 +140,7 @@ impl ToolResult {
             metadata: None,
         }
     }
-    
+
     /// Create an error result
     pub fn error<S: Into<String>>(tool_call_id: S, error: S) -> Self {
         Self {
@@ -149,19 +152,19 @@ impl ToolResult {
             metadata: None,
         }
     }
-    
+
     /// Set structured data
     pub fn with_data(mut self, data: serde_json::Value) -> Self {
         self.data = Some(data);
         self
     }
-    
+
     /// Set execution duration
     pub fn with_duration(mut self, duration_ms: u64) -> Self {
         self.duration_ms = Some(duration_ms);
         self
     }
-    
+
     /// Set metadata
     pub fn with_metadata(mut self, metadata: HashMap<String, serde_json::Value>) -> Self {
         self.metadata = Some(metadata);
@@ -176,29 +179,30 @@ impl ToolExecutor {
             tools: HashMap::new(),
         }
     }
-    
+
     /// Register a tool
     pub fn register_tool(&mut self, tool: Box<dyn Tool>) {
         self.tools.insert(tool.name().to_string(), tool);
     }
-    
+
     /// Get a tool by name
     pub fn get_tool(&self, name: &str) -> Option<&dyn Tool> {
         self.tools.get(name).map(|t| t.as_ref())
     }
-    
+
     /// List all available tools
     pub fn list_tools(&self) -> Vec<&str> {
         self.tools.keys().map(|s| s.as_str()).collect()
     }
-    
+
     /// Execute a tool call
     pub async fn execute(&self, call: ToolCall) -> Result<ToolResult> {
-        let tool = self.get_tool(&call.name)
+        let tool = self
+            .get_tool(&call.name)
             .ok_or_else(|| ToolError::NotFound {
                 name: call.name.clone(),
             })?;
-        
+
         let start_time = std::time::Instant::now();
         let call_id = call.id.clone();
         let result = tool.execute(call).await;
@@ -212,7 +216,7 @@ impl ToolExecutor {
             Err(e) => Ok(ToolResult::error(&call_id, &e.to_string()).with_duration(duration)),
         }
     }
-    
+
     /// Get tool definitions for LLM function calling
     pub fn get_tool_definitions(&self) -> Vec<crate::llm::ToolDefinition> {
         self.tools

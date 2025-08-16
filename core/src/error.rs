@@ -36,8 +36,6 @@ pub enum Error {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
-
-
     /// HTTP request errors
     #[error("HTTP error: {0}")]
     Http(#[from] reqwest::Error),
