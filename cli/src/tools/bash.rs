@@ -334,193 +334,192 @@ impl Tool for BashTool {
              * Please avoid commands that may produce a very large amount of output.\n\
          * Please run long lived commands in the background, e.g. 'sleep 10 &' or start a server in the background."
         }
+    }
 
-        fn parameters_schema(&self) -> serde_json::Value {
-            let command_description = if cfg!(target_os = "windows") {
-                "The Windows command to run (cmd.exe syntax)."
-            } else {
-                "The bash command to run."
-            };
+    fn parameters_schema(&self) -> serde_json::Value {
+        let command_description = if cfg!(target_os = "windows") {
+            "The Windows command to run (cmd.exe syntax)."
+        } else {
+            "The bash command to run."
+        };
 
-            json!({
-                "type": "object",
-                "properties": {
-                    "command": {
-                        "type": "string",
-                        "description": command_description
-                    },
-                    "restart": {
-                        "type": "boolean",
-                        "description": "Set to true to restart the shell session."
-                    }
+        json!({
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string",
+                    "description": command_description
                 },
-                "required": ["command"]
-            })
-        }
-
-        async fn execute(&self, call: ToolCall) -> Result<ToolResult> {
-            let restart: bool = call.get_parameter_or("restart", false);
-
-            if restart {
-                // Handle restart without holding lock across await
-                {
-                    let mut session_guard = self.session.lock().await;
-                    if let Some(ref mut session) = *session_guard {
-                        session.stop();
-                    }
-                    *session_guard = Some(ShellSession::new());
+                "restart": {
+                    "type": "boolean",
+                    "description": "Set to true to restart the shell session."
                 }
+            },
+            "required": ["command"]
+        })
+    }
 
-                // Start the new session
-                {
-                    let mut session_guard = self.session.lock().await;
-                    if let Some(ref mut session) = *session_guard {
-                        session.start().await?;
-                    }
-                }
+    async fn execute(&self, call: ToolCall) -> Result<ToolResult> {
+        let restart: bool = call.get_parameter_or("restart", false);
 
-                return Ok(ToolResult::success(
-                    &call.id,
-                    &"tool has been restarted.".to_string(),
-                ));
-            }
-
-            let command: String = call.get_parameter("command")?;
-
-            // Windows-specific safety check for potentially dangerous recursive commands
-            if cfg!(target_os = "windows") {
-                if let Some(warning) = check_windows_command_safety(&command) {
-                    return Ok(ToolResult::error(
-                    &call.id,
-                    &format!("⚠️  Potentially dangerous command detected: {}\n\nSafer alternatives:\n{}",
-                        warning.risk, warning.alternatives),
-                ));
-                }
-            }
-
-            // Ensure session exists and is started
-            let needs_start = {
+        if restart {
+            // Handle restart without holding lock across await
+            {
                 let mut session_guard = self.session.lock().await;
-                if session_guard.is_none() {
-                    *session_guard = Some(ShellSession::new());
-                    true
-                } else if let Some(ref session) = *session_guard {
-                    !session.started
-                } else {
-                    false
+                if let Some(ref mut session) = *session_guard {
+                    session.stop();
                 }
-            };
+                *session_guard = Some(ShellSession::new());
+            }
 
-            if needs_start {
+            // Start the new session
+            {
                 let mut session_guard = self.session.lock().await;
                 if let Some(ref mut session) = *session_guard {
                     session.start().await?;
                 }
             }
 
-            // Execute command
-            let result = {
-                let mut session_guard = self.session.lock().await;
-                if let Some(ref mut session) = *session_guard {
-                    session.run(&command).await
-                } else {
-                    return Err("No session available".into());
-                }
-            };
+            return Ok(ToolResult::success(
+                &call.id,
+                &"tool has been restarted.".to_string(),
+            ));
+        }
 
-            match result {
-                Ok((exit_code, stdout, stderr)) => {
-                    let mut output = String::new();
+        let command: String = call.get_parameter("command")?;
 
-                    if !stdout.is_empty() {
-                        output.push_str(&maybe_truncate(&stdout, None));
-                    }
-
-                    if !stderr.is_empty() {
-                        if !output.is_empty() {
-                            output.push('\n');
-                        }
-                        output.push_str(&maybe_truncate(&stderr, None));
-                    }
-
-                    if output.is_empty() {
-                        output = format!("Command completed with exit code: {}", exit_code);
-                    }
-
-                    Ok(ToolResult::success(&call.id, &output).with_data(json!({
-                        "exit_code": exit_code,
-                        "stdout": stdout,
-                        "stderr": stderr
-                    })))
-                }
-                Err(e) => Ok(ToolResult::error(
+        // Windows-specific safety check for potentially dangerous recursive commands
+        if cfg!(target_os = "windows") {
+            if let Some(warning) = check_windows_command_safety(&command) {
+                return Ok(ToolResult::error(
                     &call.id,
-                    &format!("Error running shell command: {}", e),
-                )),
+                    &format!(
+                        "⚠️  Potentially dangerous command detected: {}\n\nSafer alternatives:\n{}",
+                        warning.risk, warning.alternatives
+                    ),
+                ));
             }
         }
 
-        fn requires_confirmation(&self) -> bool {
-            true // Bash commands can be dangerous
-        }
-
-        fn examples(&self) -> Vec<ToolExample> {
-            if cfg!(target_os = "windows") {
-                vec![
-                    ToolExample {
-                        description: "List files in current directory (safe, fast)".to_string(),
-                        parameters: json!({"command": "dir"}),
-                        expected_result: "Directory listing with file details".to_string(),
-                    },
-                    ToolExample {
-                        description: "List only directories to understand structure".to_string(),
-                        parameters: json!({"command": "dir /ad"}),
-                        expected_result: "Directory listing showing only subdirectories"
-                            .to_string(),
-                    },
-                    ToolExample {
-                        description: "Search specific file types (safer than full recursive)"
-                            .to_string(),
-                        parameters: json!({"command": "dir *.rs /s"}),
-                        expected_result: "Recursive listing of .rs files only".to_string(),
-                    },
-                    ToolExample {
-                        description: "Check disk space and system info".to_string(),
-                        parameters: json!({"command": "dir | findstr bytes"}),
-                        expected_result: "Summary line showing total files and bytes".to_string(),
-                    },
-                    ToolExample {
-                        description: "Safe way to explore large projects".to_string(),
-                        parameters: json!({"command": "dir /ad | findstr /v /i \"target node_modules .git\""}),
-                        expected_result: "Directory listing excluding common large folders"
-                            .to_string(),
-                    },
-                ]
+        // Ensure session exists and is started
+        let needs_start = {
+            let mut session_guard = self.session.lock().await;
+            if session_guard.is_none() {
+                *session_guard = Some(ShellSession::new());
+                true
+            } else if let Some(ref session) = *session_guard {
+                !session.started
             } else {
-                vec![
-                    ToolExample {
-                        description: "List files in current directory (Unix)".to_string(),
-                        parameters: json!({"command": "ls -la"}),
-                        expected_result: "Directory listing with file details".to_string(),
-                    },
-                    ToolExample {
-                        description: "Check Bash version".to_string(),
-                        parameters: json!({"command": "bash --version"}),
-                        expected_result: "Bash version information".to_string(),
-                    },
-                    ToolExample {
-                        description: "Restart shell session".to_string(),
-                        parameters: json!({"command": "echo 'restarting'", "restart": true}),
-                        expected_result: "Session restarted message".to_string(),
-                    },
-                    ToolExample {
-                        description: "Run a command with persistent state".to_string(),
-                        parameters: json!({"command": "export MY_VAR=hello && echo $MY_VAR"}),
-                        expected_result: "Variable set and echoed in persistent session"
-                            .to_string(),
-                    },
-                ]
+                false
             }
+        };
+
+        if needs_start {
+            let mut session_guard = self.session.lock().await;
+            if let Some(ref mut session) = *session_guard {
+                session.start().await?;
+            }
+        }
+
+        // Execute command
+        let result = {
+            let mut session_guard = self.session.lock().await;
+            if let Some(ref mut session) = *session_guard {
+                session.run(&command).await
+            } else {
+                return Err("No session available".into());
+            }
+        };
+
+        match result {
+            Ok((exit_code, stdout, stderr)) => {
+                let mut output = String::new();
+
+                if !stdout.is_empty() {
+                    output.push_str(&maybe_truncate(&stdout, None));
+                }
+
+                if !stderr.is_empty() {
+                    if !output.is_empty() {
+                        output.push('\n');
+                    }
+                    output.push_str(&maybe_truncate(&stderr, None));
+                }
+
+                if output.is_empty() {
+                    output = format!("Command completed with exit code: {}", exit_code);
+                }
+
+                Ok(ToolResult::success(&call.id, &output).with_data(json!({
+                    "exit_code": exit_code,
+                    "stdout": stdout,
+                    "stderr": stderr
+                })))
+            }
+            Err(e) => Ok(ToolResult::error(
+                &call.id,
+                &format!("Error running shell command: {}", e),
+            )),
+        }
+    }
+
+    fn requires_confirmation(&self) -> bool {
+        true // Bash commands can be dangerous
+    }
+
+    fn examples(&self) -> Vec<ToolExample> {
+        if cfg!(target_os = "windows") {
+            vec![
+                ToolExample {
+                    description: "List files in current directory (safe, fast)".to_string(),
+                    parameters: json!({"command": "dir"}),
+                    expected_result: "Directory listing with file details".to_string(),
+                },
+                ToolExample {
+                    description: "List only directories to understand structure".to_string(),
+                    parameters: json!({"command": "dir /ad"}),
+                    expected_result: "Directory listing showing only subdirectories".to_string(),
+                },
+                ToolExample {
+                    description: "Search specific file types (safer than full recursive)"
+                        .to_string(),
+                    parameters: json!({"command": "dir *.rs /s"}),
+                    expected_result: "Recursive listing of .rs files only".to_string(),
+                },
+                ToolExample {
+                    description: "Check disk space and system info".to_string(),
+                    parameters: json!({"command": "dir | findstr bytes"}),
+                    expected_result: "Summary line showing total files and bytes".to_string(),
+                },
+                ToolExample {
+                    description: "Safe way to explore large projects".to_string(),
+                    parameters: json!({"command": "dir /ad | findstr /v /i \"target node_modules .git\""}),
+                    expected_result: "Directory listing excluding common large folders".to_string(),
+                },
+            ]
+        } else {
+            vec![
+                ToolExample {
+                    description: "List files in current directory (Unix)".to_string(),
+                    parameters: json!({"command": "ls -la"}),
+                    expected_result: "Directory listing with file details".to_string(),
+                },
+                ToolExample {
+                    description: "Check Bash version".to_string(),
+                    parameters: json!({"command": "bash --version"}),
+                    expected_result: "Bash version information".to_string(),
+                },
+                ToolExample {
+                    description: "Restart shell session".to_string(),
+                    parameters: json!({"command": "echo 'restarting'", "restart": true}),
+                    expected_result: "Session restarted message".to_string(),
+                },
+                ToolExample {
+                    description: "Run a command with persistent state".to_string(),
+                    parameters: json!({"command": "export MY_VAR=hello && echo $MY_VAR"}),
+                    expected_result: "Variable set and echoed in persistent session".to_string(),
+                },
+            ]
         }
     }
 }
