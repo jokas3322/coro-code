@@ -7,11 +7,11 @@ use tracing::info;
 pub async fn tools_command() -> Result<()> {
     info!("Listing available tools");
 
-    use coro_core::tools::ToolRegistry;
+    use crate::tools::create_cli_tool_registry;
 
     println!("🛠️  Available Tools\n");
 
-    let registry = ToolRegistry::default();
+    let registry = create_cli_tool_registry();
     let tool_names = registry.list_tools();
 
     for name in tool_names {

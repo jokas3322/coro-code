@@ -9,6 +9,7 @@ pub fn create_cli_tool_registry() -> ToolRegistry {
     // Register CLI-specific tools
     registry.register_factory(Box::new(crate::tools::BashToolFactory));
     registry.register_factory(Box::new(crate::tools::EditToolFactory));
+    registry.register_factory(Box::new(crate::tools::GlobToolFactory));
     registry.register_factory(Box::new(crate::tools::JsonEditToolFactory));
     registry.register_factory(Box::new(crate::tools::CkgToolFactory));
     registry.register_factory(Box::new(crate::tools::StatusReportToolFactory::new()));
@@ -33,6 +34,7 @@ pub fn get_default_cli_tools() -> Vec<String> {
     vec![
         "bash".to_string(),
         "str_replace_based_edit_tool".to_string(),
+        "glob".to_string(),
         "sequentialthinking".to_string(),
         "task_done".to_string(),
         "json_edit_tool".to_string(),
@@ -53,6 +55,7 @@ mod tests {
         let expected_tools = vec![
             "bash",
             "str_replace_based_edit_tool",
+            "glob",
             "sequentialthinking",
             "task_done",
             "json_edit_tool",
@@ -81,6 +84,7 @@ mod tests {
         let tools_to_test = vec![
             "bash",
             "str_replace_based_edit_tool",
+            "glob",
             "sequentialthinking",
             "task_done",
             "json_edit_tool",
