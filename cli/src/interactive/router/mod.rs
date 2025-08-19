@@ -8,8 +8,8 @@ pub mod integration;
 pub mod route;
 
 // Re-export commonly used types
-pub use core::{Router, RouterConfig, RouterResult};
+pub use core::{RouterConfig, RouterResult};
 pub use route::{Route, RouteId};
 
 // Re-export UI integration
-pub use integration::{UIRouter, UIRouterBuilder};
+pub use integration::{use_router_handle, UIRouter, UIRouterBuilder};

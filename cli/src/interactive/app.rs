@@ -544,23 +544,32 @@ fn CoroApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     };
 
     // Create router configuration with main page using new API
-    let build_result = UIRouterBuilder::new()
-        .route("main", "Main", move |_hooks| {
-            element! {
-                MainPage(
-                    status_context: status_context.clone(),
-                    input_context: input_context.clone()
-                )
-            }
-            .into()
-        })
-        .default("main")
-        .build()
-        .expect("Failed to build router");
+    let build_result: crate::interactive::router::integration::UIRouterBuildResult =
+        UIRouterBuilder::new()
+            .route("main", "Main", move |_hooks| {
+                element! {
+                    MainPage(
+                        status_context: status_context.clone(),
+                        input_context: input_context.clone()
+                    )
+                }
+                .into()
+            })
+            .route("router_test", "Router Test", move |_hooks| {
+                element! {
+                    View() {
+                        Text(content: "This is a test page.", color: Color::Red)
+                    }
+                }
+                .into()
+            })
+            .default("main")
+            .build()
+            .expect("Failed to build router");
 
     element! {
         UIRouter(
-            handle: build_result.props.handle,
+            config: build_result.props.config,
             pages: build_result.props.pages,
             fallback_page: build_result.props.fallback_page
         )

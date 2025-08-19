@@ -1,63 +1,168 @@
 //! UI framework integration for the router system
 //!
 //! This module provides UI framework-specific components and utilities for the router system.
-//! It bridges the core router functionality with the UI component system.
+//! It bridges the core router functionality with the UI component system using reactive state management.
 
-use super::{Route, RouteId, Router as CoreRouter, RouterConfig, RouterResult};
+use super::{Route, RouteId, RouterConfig, RouterResult};
 use iocraft::prelude::*;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 
 /// Type alias for page render functions
 /// Each page is a function that takes hooks and returns an element
 pub type PageRenderer = Box<dyn Fn(Hooks) -> AnyElement<'static> + Send + Sync>;
 
-/// A shareable, UI-friendly handle to control the router
+/// Reactive router configuration that holds route definitions
 #[derive(Clone)]
-pub struct RouterHandle(Arc<Mutex<CoreRouter>>);
+pub struct ReactiveRouterConfig {
+    /// Router configuration for validation and metadata
+    pub config: RouterConfig,
+    /// Maximum history size
+    pub max_history: usize,
+}
 
-impl RouterHandle {
-    /// Create a new router handle
-    pub fn new(router: CoreRouter) -> Self {
-        Self(Arc::new(Mutex::new(router)))
+impl ReactiveRouterConfig {
+    /// Create a new reactive router config from configuration
+    pub fn new(config: RouterConfig) -> RouterResult<Self> {
+        // Validate that we have at least one route
+        if config.routes().is_empty() {
+            return Err(super::core::RouterError::NoRoutes);
+        }
+
+        Ok(Self {
+            config,
+            max_history: 50,
+        })
     }
 
-    /// Navigate to a route
-    pub fn navigate(&self, id: impl Into<RouteId>) -> RouterResult<()> {
-        let mut guard = self.0.lock().unwrap();
-        guard.navigate(id)
+    /// Get the initial route for this configuration
+    pub fn initial_route(&self) -> RouteId {
+        if let Some(default_route) = self.config.default_route() {
+            default_route.clone()
+        } else if let Some((route_id, _)) = self.config.routes().iter().next() {
+            route_id.clone()
+        } else {
+            RouteId::from("default") // Fallback
+        }
+    }
+}
+
+/// Reactive router handle that uses iocraft's state management
+/// This provides a simpler, more direct approach to routing without async complexity
+#[derive(Clone)]
+pub struct ReactiveRouterHandle {
+    /// Current route state - changes automatically trigger UI updates
+    current_route: State<RouteId>,
+    /// Navigation history for back functionality
+    history: State<Vec<RouteId>>,
+    /// Router configuration for validation and metadata
+    config: ReactiveRouterConfig,
+}
+
+impl ReactiveRouterHandle {
+    /// Create a new reactive router handle with hooks
+    /// This must be called from within a component context
+    pub fn new_with_hooks(hooks: &mut Hooks, config: ReactiveRouterConfig) -> Self {
+        let initial_route = config.initial_route();
+
+        // Initialize reactive states
+        let current_route = hooks.use_state(|| initial_route);
+        let history = hooks.use_state(Vec::new);
+
+        Self {
+            current_route,
+            history,
+            config,
+        }
+    }
+
+    /// Navigate to a route - this is now synchronous and reactive
+    pub fn navigate(&mut self, id: impl Into<RouteId>) -> RouterResult<()> {
+        let route_id = id.into();
+
+        // Validate route exists
+        if !self.config.config.routes().contains_key(&route_id) {
+            return Err(super::core::RouterError::RouteNotFound(route_id.0));
+        }
+
+        // Update history if route is different
+        let current = self.current_route.read().clone();
+        if current != route_id {
+            let mut hist = self.history.read().clone();
+            hist.insert(0, current);
+
+            // Trim history if needed
+            if hist.len() > self.config.max_history {
+                hist.truncate(self.config.max_history);
+            }
+
+            self.history.set(hist);
+        }
+
+        // Update current route - this automatically triggers UI re-render
+        self.current_route.set(route_id);
+        Ok(())
     }
 
     /// Get the current route ID
     pub fn current_route_id(&self) -> RouteId {
-        let guard = self.0.lock().unwrap();
-        guard.current_route_id().clone()
+        self.current_route.read().clone()
     }
 
     /// Check if we can go back
     pub fn can_go_back(&self) -> bool {
-        let guard = self.0.lock().unwrap();
-        guard.can_go_back()
+        !self.history.read().is_empty()
     }
 
     /// Go back to the previous route
-    pub fn go_back(&self) -> bool {
-        let mut guard = self.0.lock().unwrap();
-        guard.go_back()
+    pub fn go_back(&mut self) -> bool {
+        let mut hist = self.history.read().clone();
+        if let Some(previous_route) = hist.first().cloned() {
+            hist.remove(0);
+            self.history.set(hist);
+            self.current_route.set(previous_route);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Get the current route state for reactive access
+    pub fn current_route_state(&self) -> State<RouteId> {
+        self.current_route
     }
 }
 
+/// Router context for sharing router handle with child components
+#[derive(Clone)]
+pub struct RouterContext {
+    pub handle: ReactiveRouterHandle,
+}
+
 /// Get current route from handle (simplified version)
-/// For full reactive navigation, use RouterHandle directly
-pub fn use_router(handle: &RouterHandle) -> RouteId {
+/// For full reactive navigation, use ReactiveRouterHandle directly
+pub fn use_router(handle: &ReactiveRouterHandle) -> RouteId {
     handle.current_route_id()
+}
+
+/// Hook for child components to access the router handle for navigation
+/// Returns the ReactiveRouterHandle from the current context
+pub fn use_router_handle(hooks: &mut Hooks) -> ReactiveRouterHandle {
+    let context = hooks.use_context::<RouterContext>();
+    context.handle.clone()
+}
+
+/// Hook for child components to access the current route ID reactively
+/// Returns the current route state that automatically updates UI when changed
+pub fn use_route(hooks: &mut Hooks) -> State<RouteId> {
+    let context = hooks.use_context::<RouterContext>();
+    context.handle.current_route_state()
 }
 
 /// UI router component properties
 #[derive(Props)]
 pub struct UIRouterProps {
-    /// Router handle for navigation control
-    pub handle: RouterHandle,
+    /// Router configuration
+    pub config: ReactiveRouterConfig,
     /// Map of route IDs to their corresponding page renderers
     pub pages: HashMap<RouteId, PageRenderer>,
     /// Optional fallback page for unknown routes
@@ -67,18 +172,15 @@ pub struct UIRouterProps {
 impl Default for UIRouterProps {
     fn default() -> Self {
         // Create a minimal default configuration for testing
-        let config = RouterConfig::new();
-        let router = CoreRouter::new(config).unwrap_or_else(|_| {
-            // Fallback: create a router with a default route
-            let config = RouterConfig::new()
-                .add_route(Route::new("default", "Default"))
-                .with_default_route("default".into());
-            CoreRouter::new(config).expect("Failed to create default router")
-        });
+        let router_config = RouterConfig::new()
+            .add_route(Route::new("default", "Default"))
+            .with_default_route("default".into());
 
-        let handle = RouterHandle::new(router);
+        let config = ReactiveRouterConfig::new(router_config)
+            .expect("Failed to create default reactive router config");
+
         Self {
-            handle,
+            config,
             pages: HashMap::new(),
             fallback_page: None,
         }
@@ -86,48 +188,55 @@ impl Default for UIRouterProps {
 }
 
 /// UI router component that renders different pages based on current route
+/// Now uses reactive state management for automatic UI updates
 #[component]
-pub fn UIRouter(hooks: Hooks, props: &UIRouterProps) -> impl Into<AnyElement<'static>> {
-    let current_route_id = props.handle.current_route_id();
+pub fn UIRouter(mut hooks: Hooks, props: &UIRouterProps) -> impl Into<AnyElement<'static>> {
+    // Create the router handle with proper hooks context
+    let handle = ReactiveRouterHandle::new_with_hooks(&mut hooks, props.config.clone());
 
-    // Try to find the page renderer for the current route
-    let page_element = if let Some(page_renderer) = props.pages.get(&current_route_id) {
-        // Render the page for the current route
-        page_renderer(hooks)
-    } else if let Some(fallback_renderer) = &props.fallback_page {
-        // Render fallback page if route not found
-        fallback_renderer(hooks)
-    } else {
-        // Default fallback: show route not found message
-        element! {
-            View(
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                width: 100pct,
-                height: 100pct,
-                padding: 2,
-            ) {
-                Text(
-                    content: "Route Not Found",
-                    weight: Weight::Bold,
-                    color: Color::Red
-                )
-                Text(
-                    content: format!("Unknown route: {}", current_route_id.0)
-                )
-            }
-        }
-        .into()
+    // Get the reactive current route state - this automatically triggers re-renders
+    let current_route_state = handle.current_route_state();
+    let current_route_id = current_route_state.read().clone();
+
+    // Create router context to share with child components
+    let router_context = RouterContext {
+        handle: handle.clone(),
     };
 
     element! {
-        View(
-            key: "router-container",
-            width: 100pct,
-            height: 100pct,
-        ) {
-            #(page_element)
+        ContextProvider(value: Context::owned(router_context)) {
+            View(
+                key: "router-container",
+                width: 100pct,
+                height: 100pct,
+            ) {
+                // Use conditional rendering to show the correct page
+                #(if let Some(page_renderer) = props.pages.get(&current_route_id) {
+                    Some(page_renderer(hooks))
+                } else if let Some(fallback_renderer) = &props.fallback_page {
+                    Some(fallback_renderer(hooks))
+                } else {
+                    Some(element! {
+                        View(
+                            flex_direction: FlexDirection::Column,
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            width: 100pct,
+                            height: 100pct,
+                            padding: 2,
+                        ) {
+                            Text(
+                                content: "Route Not Found",
+                                weight: Weight::Bold,
+                                color: Color::Red
+                            )
+                            Text(
+                                content: format!("Unknown route: {}", current_route_id.0)
+                            )
+                        }
+                    }.into())
+                })
+            }
         }
     }
 }
@@ -181,28 +290,27 @@ impl UIRouterBuilder {
         self
     }
 
-    /// Build the UI router props with a handle
+    /// Build the UI router props
     pub fn build(self) -> RouterResult<UIRouterBuildResult> {
-        let router = CoreRouter::new(self.config)?;
-        let handle = RouterHandle::new(router);
+        let config = ReactiveRouterConfig::new(self.config)?;
 
         Ok(UIRouterBuildResult {
             props: UIRouterProps {
-                handle: handle.clone(),
+                config: config.clone(),
                 pages: self.pages,
                 fallback_page: self.fallback_page,
             },
-            handle,
+            config,
         })
     }
 }
 
-/// Result of building a UI router with handle
+/// Result of building a UI router
 pub struct UIRouterBuildResult {
     /// UI router props for the component
     pub props: UIRouterProps,
-    /// Router handle for navigation control
-    pub handle: RouterHandle,
+    /// Router configuration for external access
+    pub config: ReactiveRouterConfig,
 }
 
 impl Default for UIRouterBuilder {
@@ -228,41 +336,30 @@ mod tests {
             .build()
             .expect("Failed to build router");
 
-        assert_eq!(build_result.handle.current_route_id().0, "home");
+        assert_eq!(build_result.config.initial_route().0, "home");
         assert_eq!(build_result.props.pages.len(), 2);
     }
 
     #[test]
     fn test_default_router_props() {
         let props = UIRouterProps::default();
-        assert_eq!(props.handle.current_route_id().0, "default");
+        assert_eq!(props.config.initial_route().0, "default");
         assert!(props.pages.is_empty());
         assert!(props.fallback_page.is_none());
     }
 
     #[test]
-    fn test_router_handle() {
-        let config = RouterConfig::new()
+    fn test_reactive_router_config() {
+        let router_config = RouterConfig::new()
             .add_route(Route::new("home", "Home"))
             .add_route(Route::new("about", "About"))
             .with_default_route("home".into());
 
-        let router = CoreRouter::new(config).expect("Failed to create router");
-        let handle = RouterHandle::new(router);
+        let config = ReactiveRouterConfig::new(router_config).expect("Failed to create config");
 
-        // Test initial state
-        assert_eq!(handle.current_route_id().0, "home");
-        assert!(!handle.can_go_back());
-
-        // Test navigation
-        handle.navigate("about").expect("Failed to navigate");
-        assert_eq!(handle.current_route_id().0, "about");
-        assert!(handle.can_go_back());
-
-        // Test go back
-        assert!(handle.go_back());
-        assert_eq!(handle.current_route_id().0, "home");
-        assert!(!handle.can_go_back());
+        // Test initial route
+        assert_eq!(config.initial_route().0, "home");
+        assert_eq!(config.max_history, 50);
     }
 
     #[test]
@@ -278,7 +375,7 @@ mod tests {
             .build()
             .expect("Failed to build router");
 
-        assert_eq!(build_result.handle.current_route_id().0, "home");
+        assert_eq!(build_result.config.initial_route().0, "home");
         assert_eq!(build_result.props.pages.len(), 2);
     }
 
@@ -318,16 +415,15 @@ mod tests {
     }
 
     #[test]
-    fn test_backward_compatibility() {
-        // Test that new API works correctly
-        let config = RouterConfig::new()
+    fn test_reactive_router_compatibility() {
+        // Test that new reactive API works correctly
+        let router_config = RouterConfig::new()
             .add_route(Route::new("home", "Home"))
             .with_default_route("home".into());
 
-        let mut router = CoreRouter::new(config).expect("Failed to create router");
+        let config = ReactiveRouterConfig::new(router_config).expect("Failed to create config");
 
-        router.navigate("home").expect("Failed to navigate");
-
-        assert_eq!(router.current_route_id().0, "home");
+        // Test initial route
+        assert_eq!(config.initial_route().0, "home");
     }
 }

@@ -11,6 +11,7 @@ use crate::interactive::file_search::{
 };
 use crate::interactive::input_history::InputHistory;
 use crate::interactive::message_handler::AppMessage;
+use crate::interactive::router::use_router_handle;
 use coro_core::ResolvedLlmConfig;
 use iocraft::prelude::*;
 use std::cmp::min;
@@ -936,6 +937,9 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
     let input_history = hooks.use_state(InputHistory::new);
     let history_initialized = hooks.use_state(|| false);
 
+    // Router handle for navigation - now using reactive system
+    let router_handle = use_router_handle(&mut hooks);
+
     // Initialize cursor position when input value changes
     let mut cursor_position_init = cursor_position;
     let input_value_for_init = input_value;
@@ -983,6 +987,8 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
             }
         }
     });
+
+    // Navigation is now handled directly in keyboard events - no async needed
 
     // Subscribe to UI events to track task status
     let ui_sender_status = context.ui_sender.clone();
@@ -1096,11 +1102,21 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
                     let mut input_value = input_value;
                     let mut cursor_position = cursor_position;
                     let mut input_history = input_history;
+                    let mut router_handle = router_handle.clone();
                     let ui_sender = ui_sender.clone();
                     let llm_config = llm_config.clone();
                     let project_path = project_path.clone();
                     move |input: String| {
                         if input.trim().is_empty() {
+                            return;
+                        }
+
+                        // Check if input is "/test" and navigate to test page
+                        if input.trim().to_lowercase() == "/test" {
+                            // Navigate directly - no async needed!
+                            let _ = router_handle.navigate("router_test");
+                            input_value.set(String::new());
+                            cursor_position.set((1, 1));
                             return;
                         }
 

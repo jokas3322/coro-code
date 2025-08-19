@@ -280,7 +280,9 @@ impl LlmClient for OpenAiClient {
                 if let MessageContent::MultiModal(blocks) = &response.message.content {
                     let tool_use_count = blocks
                         .iter()
-                        .filter(|block| matches!(block, ContentBlock::ToolUse { .. }))
+                        .filter(|block: &&ContentBlock| {
+                            matches!(block, ContentBlock::ToolUse { .. })
+                        })
                         .count();
                     if tool_use_count > 0 {
                         tracing::debug!("OpenAI response contains {} tool calls", tool_use_count);
