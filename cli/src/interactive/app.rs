@@ -6,6 +6,7 @@ use crate::interactive::components::logo::output_logo_to_terminal;
 use crate::interactive::components::status_line::StatusLineContext;
 use crate::interactive::message_handler::{app_message_to_ui_message, AppMessage};
 use crate::interactive::pages::main_page::MainPage;
+use crate::interactive::pages::router_test::RouterTestPage;
 use crate::interactive::router::{UIRouter, UIRouterBuilder};
 use crate::interactive::terminal_output::{output_content_block, overwrite_previous_lines};
 use anyhow::Result;
@@ -557,9 +558,7 @@ fn CoroApp(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
             })
             .route("router_test", "Router Test", move |_hooks| {
                 element! {
-                    View() {
-                        Text(content: "This is a test page.", color: Color::Red)
-                    }
+                    RouterTestPage()
                 }
                 .into()
             })

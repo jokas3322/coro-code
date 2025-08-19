@@ -4,5 +4,6 @@
 //! by the router system.
 
 pub mod main_page;
+pub mod router_test;
 
 // Re-export commonly used types
