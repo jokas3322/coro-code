@@ -1148,7 +1148,7 @@ pub fn InputSection(mut hooks: Hooks, props: &InputSectionProps) -> impl Into<An
                     content: {
                         let (line, col) = cursor_position.get();
                         format!(
-                            "~/projects/trae-agent-rs (main*)  Ln {}, Col {}                no sandbox (see /docs)",
+                            "~/projects/trae-agent-rs (main*)  Ln {}, Col {}",
                             line, col
                         )
                     },
