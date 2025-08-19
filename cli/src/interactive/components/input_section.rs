@@ -721,7 +721,6 @@ pub fn EnhancedTextInput(
                 width: width,
                 height: total_height,
                 border_style: BorderStyle::Round,
-                border_color: Color::Rgb { r: 100, g: 149, b: 237 },
                 padding_left: 1,
                 padding_right: 1,
                 position: Position::Relative,
