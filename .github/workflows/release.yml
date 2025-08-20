@@ -71,8 +71,8 @@ jobs:
       - name: Publish project
         if: steps.version-check.outputs.version != '0'
         run: |
-          ./scripts/publish-crates-io.bash -n ${{ secrets.CRATES_IO_TOKEN }}  # Dry run check
-          ./scripts/publish-crates-io.bash -y ${{ secrets.CRATES_IO_TOKEN }}  # Actual publish with auto-confirm
+          ./scripts/publish-crates-io.bash -n -e coro-cli ${{ secrets.CRATES_IO_TOKEN }}  # Dry run check, exclude coro-cli
+          ./scripts/publish-crates-io.bash -y -e coro-cli ${{ secrets.CRATES_IO_TOKEN }}  # Actual publish with auto-confirm, exclude coro-cli
         shell: bash
 
       # - name: Setup Pages

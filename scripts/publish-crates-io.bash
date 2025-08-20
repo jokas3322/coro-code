@@ -29,6 +29,17 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# 检查包是否在排除列表中 | Check if package is in exclude list
+is_package_excluded() {
+  local package_name="$1"
+  for excluded in "${EXCLUDED_PACKAGES[@]}"; do
+    if [[ "$package_name" == "$excluded" ]]; then
+      return 0  # Package is excluded
+    fi
+  done
+  return 1  # Package is not excluded
+}
+
 # 显示帮助信息 | Show help message
 show_help() {
   recho \
@@ -38,6 +49,7 @@ show_help() {
   -n, --dry-run      只进行预检，不实际发布
   -y, --yes          自动确认发布，无需交互
   -r, --registry     指定要发布的注册表（例如：crates-io）
+  -e, --exclude      排除指定的包，不进行发布（可多次使用）
 参数:
   API_TOKEN          crates.io 的 API 令牌（可选，也可以通过 CARGO_REGISTRY_TOKEN 环境变量设置）
 示例:
@@ -45,6 +57,8 @@ show_help() {
   $0 -n                    # 预检模式
   $0 -y                    # 自动确认发布
   $0 -r crates-io          # 指定注册表
+  $0 -e coro-cli           # 排除 coro-cli 包
+  $0 -e coro-cli -e other-package  # 排除多个包
   $0 YOUR_API_TOKEN        # 使用指定的 API 令牌
   CARGO_REGISTRY_TOKEN=YOUR_API_TOKEN $0  # 通过环境变量设置令牌" \
     "Usage: $0 [options] [API_TOKEN]
@@ -53,6 +67,7 @@ Options:
   -n, --dry-run      Dry run mode, only performs checks without publishing
   -y, --yes          Automatically confirm publication without interaction
   -r, --registry     Specify the registry to publish to (e.g., crates-io)
+  -e, --exclude      Exclude specified package from publishing (can be used multiple times)
 Arguments:
   API_TOKEN          API token for crates.io (optional, can also be set via CARGO_REGISTRY_TOKEN environment variable)
 Examples:
@@ -60,6 +75,8 @@ Examples:
   $0 -n                    # Dry run mode
   $0 -y                    # Automatically confirm publication
   $0 -r crates-io          # Specify registry
+  $0 -e coro-cli           # Exclude coro-cli package
+  $0 -e coro-cli -e other-package  # Exclude multiple packages
   $0 YOUR_API_TOKEN        # Use specified API token
   CARGO_REGISTRY_TOKEN=YOUR_API_TOKEN $0  # Set token via environment variable"
 }
@@ -68,6 +85,7 @@ Examples:
 DRY_RUN=false
 AUTO_CONFIRM=false
 REGISTRY=""
+EXCLUDED_PACKAGES=()
 
 # 解析命令行参数 | Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -86,6 +104,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -r|--registry)
       REGISTRY="$2"
+      shift 2
+      ;;
+    -e|--exclude)
+      EXCLUDED_PACKAGES+=("$2")
       shift 2
       ;;
     -*)
@@ -193,11 +215,48 @@ if [ -z "$members" ]; then
   exit 1
 fi
 
+# 过滤排除的包 | Filter excluded packages
+filtered_members=""
+excluded_members=""
+while IFS= read -r member; do
+  if is_package_excluded "$member"; then
+    excluded_members="$excluded_members$member\n"
+  else
+    filtered_members="$filtered_members$member\n"
+  fi
+done <<< "$members"
+
+# 移除末尾的换行符 | Remove trailing newlines
+filtered_members=$(echo -e "$filtered_members" | sed '/^$/d')
+excluded_members=$(echo -e "$excluded_members" | sed '/^$/d')
+
 # 显示要发布的包 | Show packages to be published
 recho \
   "${YELLOW}要发布的包:${NC}" \
   "${YELLOW}Packages to be published:${NC}"
-echo "$members"
+if [ -n "$filtered_members" ]; then
+  echo "$filtered_members"
+else
+  recho \
+    "${YELLOW}没有包需要发布（所有包都被排除）${NC}" \
+    "${YELLOW}No packages to publish (all packages excluded)${NC}"
+fi
+
+# 显示排除的包 | Show excluded packages
+if [ -n "$excluded_members" ]; then
+  recho \
+    "${YELLOW}排除的包:${NC}" \
+    "${YELLOW}Excluded packages:${NC}"
+  echo "$excluded_members"
+fi
+
+# 检查是否有包需要发布 | Check if there are packages to publish
+if [ -z "$filtered_members" ]; then
+  recho \
+    "${YELLOW}没有包需要发布，退出。${NC}" \
+    "${YELLOW}No packages to publish, exiting.${NC}"
+  exit 0
+fi
 
 # 确认发布 | Confirm publication
 if [ "$DRY_RUN" = false ]; then
@@ -233,22 +292,35 @@ declare -A dependencies
 
 # 解析依赖关系 | Parse dependencies
 while IFS= read -r member; do
+  # 跳过排除的包 | Skip excluded packages
+  if is_package_excluded "$member"; then
+    continue
+  fi
+
   # 获取直接依赖 | Get direct dependencies
   deps=$(echo "$metadata" | jq -r --arg name "$member" '.packages[] | select(.name == $name) | .dependencies[] | select(.name | startswith("coro-")) | .name')
 
+  # 过滤掉排除的依赖 | Filter out excluded dependencies
+  filtered_deps=""
+  for dep in $deps; do
+    if ! is_package_excluded "$dep"; then
+      filtered_deps="$filtered_deps$dep "
+    fi
+  done
+
   # 将依赖关系存储在数组中
-  dependencies["$member"]="$deps"
+  dependencies["$member"]="$filtered_deps"
 done <<< "$members"
 
 # 使用 Kahn 算法进行拓扑排序 | Use Kahn's algorithm for topological sorting
 # 初始化入度数组 | Initialize the in-degree array
 declare -A in_degree
-for member in $members; do
+for member in $filtered_members; do
   in_degree["$member"]=0
 done
 
 # 计算每个节点的入度 | Calculate the in-degree of each node
-for member in $members; do
+for member in $filtered_members; do
   deps=${dependencies["$member"]}
   for dep in $deps; do
     if [[ -n "${in_degree[$dep]}" ]]; then
@@ -259,7 +331,7 @@ done
 
 # 初始化队列 | Initialize the queue
 queue=()
-for member in $members; do
+for member in $filtered_members; do
   if [[ ${in_degree["$member"]} -eq 0 ]]; then
     queue+=("$member")
   fi
@@ -290,7 +362,8 @@ while [[ ${#queue[@]} -gt 0 ]]; do
 done
 
 # 检查是否存在循环依赖 | Check for circular dependencies
-if [[ ${#publish_order[@]} -ne $(echo "$members" | wc -w) ]]; then
+filtered_members_count=$(echo "$filtered_members" | wc -w)
+if [[ ${#publish_order[@]} -ne $filtered_members_count ]]; then
   recho \
     "${RED}错误: 无法确定发布顺序，请检查包之间的依赖关系是否存在循环。${NC}" \
     "${RED}Error: Could not determine publish order, please check for circular dependencies between packages.${NC}"
